@@ -22,16 +22,12 @@ func _enter_tree() -> void:
     composite_exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
     file_handler = load("res://addons/godot2prompt/core/io/file_handler.gd").new()
 
-    # Setup tool menu
+    # Setup tool menu with the new name
     add_tool_menu_item("Scene to Prompt", export_scene_hierarchy)
 
 func _exit_tree() -> void:
     # Cleanup
     remove_tool_menu_item("Scene to Prompt")
-
-    # Free components
-    if ui_manager:
-        ui_manager.queue_free()
 
     ui_manager = null
     scene_processor = null
