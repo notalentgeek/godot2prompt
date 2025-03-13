@@ -1,5 +1,5 @@
 @tool
-extends "res://addons/ascii_export/core/exporters/base_exporter.gd"
+extends "res://addons/godot2prompt/core/exporters/base_exporter.gd"
 
 # Tree exporter - provides basic tree structure formatting
 # This is the base visualization format that other exporters may enhance

@@ -1,5 +1,5 @@
 @tool
-extends "res://addons/ascii_export/core/exporters/base_exporter.gd"
+extends "res://addons/godot2prompt/core/exporters/base_exporter.gd"
 
 # Code exporter - enhances the tree structure with script code
 # This builds upon the basic tree visualization by adding code blocks
