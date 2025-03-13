@@ -10,6 +10,7 @@
 
 - **Scene Hierarchy Export**: Converts your Godot scenes into clearly formatted text representations
 - **Script Inclusion**: Optionally embeds the GDScript code attached to nodes
+- **Node Properties**: Extracts and includes relevant properties for each node type
 - **LLM Optimized**: Formats output specifically for language model context windows
 - **Simple Interface**: Access directly from the Godot editor's Tools menu
 - **Modular Design**: Well-organized codebase that's easy to extend with new exporters
@@ -24,18 +25,26 @@
 ## Usage
 
 1. Open the Godot scene you want to export
-2. Navigate to Project → Tools → Export Hierarchy
-3. Choose whether to include script code in the export
+2. Navigate to Project → Tools → Export Scene Hierarchy
+3. Choose your export options:
+   - Whether to include script code
+   - Whether to include node properties
 4. The hierarchy will be exported to `res://scene_hierarchy.txt`
 5. Use this file as context for your LLM prompts when seeking AI assistance
 
 ## Example
 
-When you export a scene with script inclusion, you'll get output like this:
+When you export a scene with script and property inclusion, you'll get output like this:
 
 ```
 - Main (Node)
   - Player (CharacterBody2D)
+    • Position: (100, 200)
+    • Scale: (1, 1)
+    • Rotation: 0
+    • Visible: true
+    • Collision Layer: 1
+    • Collision Mask: 1
     ```gdscript
     extends CharacterBody2D
 
@@ -61,10 +70,17 @@ When you export a scene with script inclusion, you'll get output like this:
         move_and_slide()
     ```
     - Sprite (Sprite2D)
+      • Position: (0, 0)
+      • Scale: (1, 1)
+      • Visible: true
     - CollisionShape (CollisionShape2D)
+      • Position: (0, 0)
+      • Shape Type: RectangleShape2D
   - TileMap (TileMap)
   - UI (CanvasLayer)
     - Score (Label)
+      • Text: "Score: 0"
+      • Size: (100, 50)
 ```
 
 This formatted output can be copied directly into your prompt when asking an LLM for help with your Godot project.
@@ -84,6 +100,12 @@ Godot2Prompt uses a modular architecture that makes it easy to add new exporters
 2. Make it extend `base_exporter.gd`
 3. Implement the `generate_output(node_data)` method
 4. Update plugin.gd to use your new exporter
+
+To add support for additional node types or properties:
+
+1. Modify the `_extract_node_properties` method in `scene_processor.gd`
+2. Add conditionals for your specific node types
+3. Extract the relevant properties
 
 ## Contributing
 
