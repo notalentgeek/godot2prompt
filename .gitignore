@@ -1,0 +1,64 @@
+# Build Artifacts
+*.bc
+*.dblite
+*.dll
+*.dylib
+*.exp
+*.ilk
+*.lib
+*.o
+*.obj
+*.os
+*.pdb
+*.so
+
+# Editor Files
+*.autosave
+*.bak
+*.code-workspace
+*.orig
+*.save
+*.swap
+*.tmp
+*.user
+*~
+.classpath
+.idea/
+.project
+.settings/
+.vs/
+.vscode/
+
+# Godot Specific
+*.uid
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# Logs And Caches
+*~
+._*
+.DS_Store
+.directory
+.fuse_hidden*
+.mono/
+.nfs*
+.Trash-*
+*.log
+logs/
+mono_crash.*
+Thumbs.db
+
+# Project Specific
+scene_hierarchy.txt    # Addon output files
+user_preferences.cfg   # User configuration files
+
+# System Specific
+$RECYCLE.BIN/
+.AppleDouble
+.DS_Store
+.LSOverride
+desktop.ini
+ehthumbs.db
+ehthumbs_vista.db
