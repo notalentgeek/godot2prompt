@@ -25,7 +25,7 @@
 ## Usage
 
 1. Open the Godot scene you want to export
-2. Navigate to Project → Tools → Export Scene Hierarchy
+2. Navigate to Project → Tools → Scene to Prompt
 3. Choose your export options:
    - Whether to include script code
    - Whether to include node properties
