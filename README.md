@@ -1,8 +1,10 @@
 # Godot2Prompt
 
-<img src="icon.svg" width="128" height="128" align="right" style="margin-left: 20px;">
+<img src="icon.svg" width="128" height="128" align="left" style="margin-right: 20px;">
 
 **Godot2Prompt** is a specialized Godot addon that transforms your scene hierarchies into LLM-ready prompts, creating perfectly formatted context for AI assistance with your Godot projects.
+
+<br clear="left"/>
 
 ## Features
 
