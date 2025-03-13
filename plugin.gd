@@ -2,58 +2,72 @@
 extends EditorPlugin
 
 var menu: EditorInterface
+var ui_manager
+var scene_processor
+var tree_exporter
+var code_exporter
+var file_handler
 
 func _enter_tree() -> void:
 	menu = get_editor_interface()
+	
+	# Initialize components using load instead of preload
+	ui_manager = load("res://addons/ascii_export/ui/export_dialog.gd").new()
+	scene_processor = load("res://addons/ascii_export/core/scene_processor.gd").new()
+	tree_exporter = load("res://addons/ascii_export/core/exporters/tree_exporter.gd").new()
+	code_exporter = load("res://addons/ascii_export/core/exporters/code_exporter.gd").new()
+	file_handler = load("res://addons/ascii_export/core/io/file_handler.gd").new()
+	
+	# Setup tool menu with a reference to the method (safer approach)
 	add_tool_menu_item("Export Scene Hierarchy", export_scene_hierarchy)
 
 func _exit_tree() -> void:
+	# Cleanup
 	remove_tool_menu_item("Export Scene Hierarchy")
+	
+	# Free components
+	if ui_manager:
+		ui_manager.queue_free()
+	
+	ui_manager = null
+	scene_processor = null
+	tree_exporter = null
+	code_exporter = null
+	file_handler = null
 
+# The menu will call this method
 func export_scene_hierarchy() -> void:
 	var root = menu.get_edited_scene_root()
 	if root:
-		# Create a confirmation dialog to ask about script inclusion
-		var dialog = ConfirmationDialog.new()
-		dialog.title = "Export Scene Hierarchy"
-		dialog.dialog_text = "Include attached scripts in the export?"
-		dialog.dialog_hide_on_ok = true
-		dialog.get_ok_button().text = "Yes"
+		# Initialize the dialog with the root node
+		ui_manager.initialize(menu.get_base_control())
 		
-		# Add a "No" button that will export without scripts
-		var no_button = dialog.add_button("No", true, "export_without_scripts")
-		no_button.connect("pressed", Callable(self, "_on_export_without_scripts").bind(dialog, root))
+		# Connect signals
+		if not ui_manager.is_connected("export_with_scripts", Callable(self, "_on_export_with_scripts")):
+			ui_manager.connect("export_with_scripts", Callable(self, "_on_export_with_scripts"))
 		
-		# Connect the default "OK" button to export with scripts
-		dialog.connect("confirmed", Callable(self, "_on_export_with_scripts").bind(root))
+		if not ui_manager.is_connected("export_without_scripts", Callable(self, "_on_export_without_scripts")):
+			ui_manager.connect("export_without_scripts", Callable(self, "_on_export_without_scripts"))
 		
-		# Show the dialog
-		menu.get_base_control().add_child(dialog)
-		dialog.popup_centered()
+		ui_manager.show_dialog(root)
 
 func _on_export_with_scripts(root: Node) -> void:
 	_perform_export(root, true)
 
-func _on_export_without_scripts(dialog: Window, root: Node) -> void:
-	dialog.hide()
+func _on_export_without_scripts(root: Node) -> void:
 	_perform_export(root, false)
 
 func _perform_export(root: Node, include_scripts: bool) -> void:
-	var hierarchy_text = format_hierarchy(root, 0, include_scripts)
-	var file = FileAccess.open("res://scene_hierarchy.txt", FileAccess.WRITE)
-	file.store_string(hierarchy_text)
-	file.close()
+	# Process the scene to get the hierarchy
+	var node_data = scene_processor.process_scene(root)
+	
+	# Format the hierarchy based on export options
+	var output_text = ""
+	if include_scripts:
+		output_text = code_exporter.generate_output(node_data)
+	else:
+		output_text = tree_exporter.generate_output(node_data)
+	
+	# Save the file
+	file_handler.save_to_file("res://scene_hierarchy.txt", output_text)
 	print("Scene hierarchy exported to scene_hierarchy.txt")
-
-func format_hierarchy(node: Node, depth: int, include_scripts: bool = true) -> String:
-	var indent = "  ".repeat(depth)
-	var output = indent + "- " + node.name + " (" + node.get_class() + ")\n"
-	
-	if include_scripts and node.get_script():
-		var script_text = "```gdscript\n" + node.get_script().get_source_code() + "\n```\n"
-		output += indent + "  " + script_text.replace("\n", "\n" + indent + "  ") + "\n"
-	
-	for child in node.get_children():
-		output += format_hierarchy(child, depth + 1, include_scripts)
-	
-	return output
