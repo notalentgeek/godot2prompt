@@ -11,8 +11,9 @@
 - **Scene Hierarchy Export**: Converts your Godot scenes into clearly formatted text representations
 - **Script Inclusion**: Optionally embeds the GDScript code attached to nodes
 - **Node Properties**: Extracts and includes relevant properties for each node type
+- **Signal Connections**: Shows how nodes are connected through signals
+- **Node Selection**: Choose which part of your scene to export
 - **LLM Optimized**: Formats output specifically for language model context windows
-- **Simple Interface**: Access directly from the Godot editor's Tools menu
 - **Modular Design**: Well-organized codebase that's easy to extend with new exporters
 
 ## Installation
@@ -26,18 +27,22 @@
 
 1. Open the Godot scene you want to export
 2. Navigate to Project → Tools → Scene to Prompt
-3. Choose your export options:
+3. Select which nodes to include from your scene hierarchy
+4. Choose your export options:
    - Whether to include script code
    - Whether to include node properties
-4. The hierarchy will be exported to `res://scene_hierarchy.txt`
-5. Use this file as context for your LLM prompts when seeking AI assistance
+   - Whether to include signal connections
+5. The hierarchy will be exported to `res://scene_hierarchy.txt`
+6. Use this file as context for your LLM prompts when seeking AI assistance
 
 ## Example
 
-When you export a scene with script and property inclusion, you'll get output like this:
+When you export a scene with all options enabled, you'll get output like this:
 
 ```
 - Main (Node)
+  Signals:
+    • Signal: ready → _on_ready
   - Player (CharacterBody2D)
     • Position: (100, 200)
     • Scale: (1, 1)
@@ -45,6 +50,8 @@ When you export a scene with script and property inclusion, you'll get output li
     • Visible: true
     • Collision Layer: 1
     • Collision Mask: 1
+    Signals:
+      • Signal: area_entered → Main._on_player_area_entered
     ```gdscript
     extends CharacterBody2D
 
@@ -81,6 +88,8 @@ When you export a scene with script and property inclusion, you'll get output li
     - Score (Label)
       • Text: "Score: 0"
       • Size: (100, 50)
+      Signals:
+        • Signal: text_changed → Main._on_score_changed
 ```
 
 This formatted output can be copied directly into your prompt when asking an LLM for help with your Godot project.
@@ -91,6 +100,7 @@ This formatted output can be copied directly into your prompt when asking an LLM
 - **Context Optimization**: Formats scene data to maximize useful information in the LLM context window
 - **Time Saving**: Quickly generate exportable scene documentation
 - **Better AI Responses**: Receive more accurate and relevant assistance from AI tools
+- **Selective Export**: Export only the parts of your scene that are relevant to your question
 
 ## Extending
 
@@ -98,7 +108,7 @@ Godot2Prompt uses a modular architecture that makes it easy to add new exporters
 
 1. Create a new script in the `core/exporters/` directory
 2. Make it extend `base_exporter.gd`
-3. Implement the `generate_output(node_data)` method
+3. Implement the `format_node_content(node_data)` method
 4. Update plugin.gd to use your new exporter
 
 To add support for additional node types or properties:
