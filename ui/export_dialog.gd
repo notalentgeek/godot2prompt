@@ -31,8 +31,14 @@ func initialize(parent_control: Control) -> void:
 
 		# Add dialog header label
 		var header_label = Label.new()
-		header_label.text = "Select nodes to export:"
+		header_label.text = "Select nodes to include in export:"
 		main_vbox.add_child(header_label)
+
+		# Add help text
+		var help_label = Label.new()
+		help_label.text = "Selecting a node will automatically include all its children"
+		help_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		main_vbox.add_child(help_label)
 
 		# Add tree for scene hierarchy
 		tree = Tree.new()
