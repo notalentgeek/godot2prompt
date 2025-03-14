@@ -8,24 +8,26 @@ class NodeData:
 	var script_code: String
 	var properties: Dictionary
 	var signals: Array
+	var error_log: Array # Added error_log
 	var children: Array
 	var depth: int
 
-	func _init(p_name: String, p_class: String, p_depth: int, p_script: String = "", p_properties: Dictionary = {}, p_signals: Array = []):
+	func _init(p_name: String, p_class: String, p_depth: int, p_script: String = "", p_properties: Dictionary = {}, p_signals: Array = [], p_error_log: Array = []):
 		name = p_name
 		type = p_class
 		depth = p_depth
 		script_code = p_script
 		properties = p_properties
 		signals = p_signals
+		error_log = p_error_log
 		children = []
 
 # Process the scene and gather data
-func process_scene(root: Node, include_properties: bool = false, include_signals: bool = false) -> NodeData:
-	return _process_node(root, 0, include_properties, include_signals)
+func process_scene(root: Node, include_properties: bool = false, include_signals: bool = false, error_log: Array = []) -> NodeData:
+	return _process_node(root, 0, include_properties, include_signals, error_log)
 
 # Recursively process each node
-func _process_node(node: Node, depth: int, include_properties: bool, include_signals: bool) -> NodeData:
+func _process_node(node: Node, depth: int, include_properties: bool, include_signals: bool, error_log: Array = []) -> NodeData:
 	var script_code = ""
 	var properties = {}
 	var signals_data = []
@@ -42,8 +44,12 @@ func _process_node(node: Node, depth: int, include_properties: bool, include_sig
 	if include_signals:
 		signals_data = _extract_node_signals(node)
 
-	# Create data for this node
-	var node_data = NodeData.new(node.name, node.get_class(), depth, script_code, properties, signals_data)
+	# Create data for this node - only include error_log for the root node
+	var node_data
+	if depth == 0:
+		node_data = NodeData.new(node.name, node.get_class(), depth, script_code, properties, signals_data, error_log)
+	else:
+		node_data = NodeData.new(node.name, node.get_class(), depth, script_code, properties, signals_data, [])
 
 	# Process all children
 	for child in node.get_children():
@@ -74,37 +80,7 @@ func _extract_node_properties(node: Node) -> Dictionary:
 			if "text" in node:
 				properties["Text"] = node.text
 
-	# Spatial properties (3D nodes)
-	if node is Node3D:
-		properties["Position"] = node.position
-		properties["Scale"] = node.scale
-		properties["Rotation"] = node.rotation
-		properties["Visible"] = node.visible
-
-	# PhysicsBody-specific properties
-	if node is PhysicsBody2D or node is PhysicsBody3D:
-		properties["Collision Layer"] = node.collision_layer
-		properties["Collision Mask"] = node.collision_mask
-
-	# CollisionShape properties
-	if node is CollisionShape2D:
-		if node.shape != null:
-			properties["Shape Type"] = node.shape.get_class()
-
-	if node is CollisionShape3D:
-		if node.shape != null:
-			properties["Shape Type"] = node.shape.get_class()
-
-	# Camera properties
-	if node is Camera2D:
-		properties["Current"] = node.current
-		properties["Zoom"] = node.zoom
-
-	if node is Camera3D:
-		properties["Current"] = node.current
-		properties["FOV"] = node.fov
-
-	# Add more node type specific properties here
+	# Add more properties here
 
 	return properties
 
