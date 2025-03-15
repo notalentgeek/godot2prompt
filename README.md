@@ -68,7 +68,7 @@ When you enable all export options, you'll get a comprehensive representation of
   • Position: (0, 0)
   • Scale: (1, 1)
   • Visible: true
-  ```gdscript
+  '''gdscript
   extends Node2D
 
   var score = 0
@@ -80,7 +80,7 @@ When you enable all export options, you'll get a comprehensive representation of
       if area.is_in_group("collectible"):
           score += 1
           $UI/Score.text = "Score: " + str(score)
-  ```
+  '''
   - Player (CharacterBody2D)
     Emits Signals:
       • area_entered → Main._on_player_area_entered
@@ -90,7 +90,7 @@ When you enable all export options, you'll get a comprehensive representation of
     • Visible: true
     • Collision Layer: 1
     • Collision Mask: 1
-    ```gdscript
+    '''gdscript
     extends CharacterBody2D
 
     const SPEED = 300.0
@@ -113,7 +113,7 @@ When you enable all export options, you'll get a comprehensive representation of
             velocity.x = move_toward(velocity.x, 0, SPEED)
 
         move_and_slide()
-    ```
+    '''
     - Sprite (Sprite2D)
       • Position: (0, 0)
       • Scale: (1, 1)
