@@ -11,7 +11,7 @@ var include_signals_checkbox: CheckBox = null
 var include_errors_checkbox: CheckBox = null
 var tree: Tree = null
 var root_item: TreeItem = null
-var node_items = {} # Dictionary to map TreeItems to Nodes
+var node_items = {}  # Dictionary to map TreeItems to Nodes
 
 func initialize(parent_control: Control) -> void:
 	# Create the dialog if it doesn't exist
@@ -22,7 +22,7 @@ func initialize(parent_control: Control) -> void:
 
 		# Configure the dialog
 		dialog.title = "Scene to Prompt"
-		dialog.min_size = Vector2(500, 400) # Larger dialog size
+		dialog.min_size = Vector2(500, 400)  # Larger dialog size
 
 		# Create main container
 		var main_vbox = VBoxContainer.new()
@@ -62,32 +62,32 @@ func initialize(parent_control: Control) -> void:
 		options_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		main_vbox.add_child(options_grid)
 
-		# Add script checkbox
+		# Add script checkbox - all checkboxes unchecked by default
 		include_scripts_checkbox = CheckBox.new()
 		include_scripts_checkbox.text = "Export Scripts"
 		include_scripts_checkbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		include_scripts_checkbox.set_pressed(true)
+		include_scripts_checkbox.set_pressed(false)
 		options_grid.add_child(include_scripts_checkbox)
 
 		# Add property checkbox
 		include_properties_checkbox = CheckBox.new()
 		include_properties_checkbox.text = "Export Properties"
 		include_properties_checkbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		include_properties_checkbox.set_pressed(true)
+		include_properties_checkbox.set_pressed(false)
 		options_grid.add_child(include_properties_checkbox)
 
 		# Add signals checkbox
 		include_signals_checkbox = CheckBox.new()
 		include_signals_checkbox.text = "Export Signals"
 		include_signals_checkbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		include_signals_checkbox.set_pressed(true)
+		include_signals_checkbox.set_pressed(false)
 		options_grid.add_child(include_signals_checkbox)
 
 		# Add errors checkbox
 		include_errors_checkbox = CheckBox.new()
 		include_errors_checkbox.text = "Include Recent Errors"
 		include_errors_checkbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		include_errors_checkbox.set_pressed(true)
+		include_errors_checkbox.set_pressed(false)
 		options_grid.add_child(include_errors_checkbox)
 
 		# Add spacer

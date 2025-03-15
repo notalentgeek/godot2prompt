@@ -12,6 +12,7 @@
 - **Script Inclusion**: Optionally embeds the GDScript code attached to nodes
 - **Node Properties**: Extracts and includes relevant properties for each node type
 - **Signal Connections**: Shows how nodes are connected through signals
+- **Error Context**: Includes recent error messages to help debug issues
 - **Node Selection**: Choose which part of your scene to export
 - **LLM Optimized**: Formats output specifically for language model context windows
 - **Modular Design**: Well-organized codebase that's easy to extend with new exporters
@@ -32,26 +33,63 @@
    - Whether to include script code
    - Whether to include node properties
    - Whether to include signal connections
+   - Whether to include recent error messages
 5. The hierarchy will be exported to `res://scene_hierarchy.txt`
 6. Use this file as context for your LLM prompts when seeking AI assistance
 
-## Example
+## Examples
 
-When you export a scene with all options enabled, you'll get output like this:
+### Basic Scene Hierarchy (Default)
+
+By default, Godot2Prompt exports a clean tree structure showing your scene's hierarchy:
 
 ```
-- Main (Node)
-  Signals:
-    • Signal: ready → _on_ready
+- Main (Node2D)
   - Player (CharacterBody2D)
+    - Sprite (Sprite2D)
+    - CollisionShape (CollisionShape2D)
+  - TileMap (TileMap)
+  - UI (CanvasLayer)
+    - Score (Label)
+```
+
+This basic representation gives language models a clear understanding of your scene's organization without overwhelming them with details.
+
+### Full-Featured Export (With All Options)
+
+When you enable all export options, you'll get a comprehensive representation of your scene:
+
+```
+- Main (Node2D)
+  Emits Signals:
+    • ready → _on_ready
+  Receives Signals:
+    • Player.area_entered → _on_player_area_entered
+  • Position: (0, 0)
+  • Scale: (1, 1)
+  • Visible: true
+  ```gdscript
+  extends Node2D
+
+  var score = 0
+
+  func _on_ready():
+      $UI/Score.text = "Score: 0"
+
+  func _on_player_area_entered(area):
+      if area.is_in_group("collectible"):
+          score += 1
+          $UI/Score.text = "Score: " + str(score)
+  ```
+  - Player (CharacterBody2D)
+    Emits Signals:
+      • area_entered → Main._on_player_area_entered
     • Position: (100, 200)
     • Scale: (1, 1)
     • Rotation: 0
     • Visible: true
     • Collision Layer: 1
     • Collision Mask: 1
-    Signals:
-      • Signal: area_entered → Main._on_player_area_entered
     ```gdscript
     extends CharacterBody2D
 
@@ -88,11 +126,15 @@ When you export a scene with all options enabled, you'll get output like this:
     - Score (Label)
       • Text: "Score: 0"
       • Size: (100, 50)
-      Signals:
-        • Signal: text_changed → Main._on_score_changed
+      Receives Signals:
+        • Main.ready → update_text
+
+Recent Errors:
+- ERROR: res://scenes/Player.gd:25 - Parse Error: Variable 'speed' not declared in the current scope
+- ERROR in res://scenes/MainScene.tscn:52 - [ext_resource] referenced non-existent resource at: res://sprites/missing_texture.png
 ```
 
-This formatted output can be copied directly into your prompt when asking an LLM for help with your Godot project.
+This comprehensive output provides language models with a complete picture of your scene, including code, properties, signal connections, and recent errors.
 
 ## Why Use Godot2Prompt?
 
@@ -101,6 +143,7 @@ This formatted output can be copied directly into your prompt when asking an LLM
 - **Time Saving**: Quickly generate exportable scene documentation
 - **Better AI Responses**: Receive more accurate and relevant assistance from AI tools
 - **Selective Export**: Export only the parts of your scene that are relevant to your question
+- **Error Diagnosis**: Include error messages to help LLMs debug your code
 
 ## Extending
 
@@ -110,12 +153,6 @@ Godot2Prompt uses a modular architecture that makes it easy to add new exporters
 2. Make it extend `base_exporter.gd`
 3. Implement the `format_node_content(node_data)` method
 4. Update plugin.gd to use your new exporter
-
-To add support for additional node types or properties:
-
-1. Modify the `_extract_node_properties` method in `scene_processor.gd`
-2. Add conditionals for your specific node types
-3. Extract the relevant properties
 
 ## Contributing
 
