@@ -9,6 +9,7 @@ var code_exporter
 var properties_exporter
 var signal_exporter
 var error_context_exporter
+var project_config_exporter
 var composite_exporter
 var file_handler
 var error_logger
@@ -24,6 +25,7 @@ func _enter_tree() -> void:
     properties_exporter = load("res://addons/godot2prompt/core/exporters/properties_exporter.gd").new()
     signal_exporter = load("res://addons/godot2prompt/core/exporters/signal_exporter.gd").new()
     error_context_exporter = load("res://addons/godot2prompt/core/exporters/error_context_exporter.gd").new()
+    project_config_exporter = load("res://addons/godot2prompt/core/exporters/project_config_exporter.gd").new()
     composite_exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
     file_handler = load("res://addons/godot2prompt/core/io/file_handler.gd").new()
     error_logger = load("res://addons/godot2prompt/core/error_logger.gd").new()
@@ -49,6 +51,7 @@ func _exit_tree() -> void:
     properties_exporter = null
     signal_exporter = null
     error_context_exporter = null
+    project_config_exporter = null
     composite_exporter = null
     file_handler = null
     error_logger = null
@@ -60,6 +63,10 @@ func _setup_error_monitoring() -> void:
         add_child(error_logger.log_check_timer)
         error_logger.log_check_timer.start()
         print("Godot2Prompt: Error monitoring started")
+
+    # Add some sample errors for testing
+    error_logger.add_error("Sample error: Missing node reference in PlayerController.gd:34")
+    error_logger.add_error("Sample error: Type mismatch in Enemy.gd:127 - Expected int but got String")
 
 # The menu will call this method
 func export_scene_hierarchy() -> void:
@@ -93,14 +100,17 @@ func _on_error_dialog_closed(dialog):
     if dialog and is_instance_valid(dialog):
         dialog.queue_free()
 
-func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_properties: bool, include_signals: bool, include_errors: bool) -> void:
+func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_properties: bool,
+                         include_signals: bool, include_errors: bool, include_project_settings: bool) -> void:
     # Get the error log if needed
     var error_log = []
     if include_errors:
         error_log = error_logger.get_errors()
 
     # Process the scene to get the hierarchy starting from the selected node
-    var node_data = scene_processor.process_scene(selected_node, include_properties, include_signals, error_log)
+    var node_data = scene_processor.process_scene(selected_node, include_properties,
+                                                 include_signals, error_log,
+                                                 include_project_settings)
 
     # Create a fresh composite exporter for this export
     var exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
@@ -120,6 +130,9 @@ func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_pr
 
     if include_errors:
         exporter.add_exporter(error_context_exporter)
+
+    if include_project_settings:
+        exporter.add_exporter(project_config_exporter)
 
     # Generate the output
     var output_text = exporter.generate_output(node_data)

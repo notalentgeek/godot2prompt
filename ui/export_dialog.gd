@@ -1,7 +1,7 @@
 @tool
 extends RefCounted
 
-signal export_hierarchy(selected_node, include_scripts, include_properties, include_signals, include_errors)
+signal export_hierarchy(selected_node, include_scripts, include_properties, include_signals, include_errors, include_project_settings)
 
 var dialog: Window = null
 var current_root: Node = null
@@ -9,9 +9,10 @@ var include_scripts_checkbox: CheckBox = null
 var include_properties_checkbox: CheckBox = null
 var include_signals_checkbox: CheckBox = null
 var include_errors_checkbox: CheckBox = null
+var include_project_settings_checkbox: CheckBox = null
 var tree: Tree = null
 var root_item: TreeItem = null
-var node_items = {}  # Dictionary to map TreeItems to Nodes
+var node_items = {} # Dictionary to map TreeItems to Nodes
 
 func initialize(parent_control: Control) -> void:
 	# Create the dialog if it doesn't exist
@@ -22,7 +23,7 @@ func initialize(parent_control: Control) -> void:
 
 		# Configure the dialog
 		dialog.title = "Scene to Prompt"
-		dialog.min_size = Vector2(500, 400)  # Larger dialog size
+		dialog.min_size = Vector2(500, 400) # Larger dialog size
 
 		# Create main container
 		var main_vbox = VBoxContainer.new()
@@ -56,9 +57,9 @@ func initialize(parent_control: Control) -> void:
 		options_label.text = "Export options:"
 		main_vbox.add_child(options_label)
 
-		# Options grid container (2 columns for better layout)
+		# Options grid container (3 columns for better layout with 5 options)
 		var options_grid = GridContainer.new()
-		options_grid.columns = 2
+		options_grid.columns = 3
 		options_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		main_vbox.add_child(options_grid)
 
@@ -89,6 +90,13 @@ func initialize(parent_control: Control) -> void:
 		include_errors_checkbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		include_errors_checkbox.set_pressed(false)
 		options_grid.add_child(include_errors_checkbox)
+
+		# Add project settings checkbox
+		include_project_settings_checkbox = CheckBox.new()
+		include_project_settings_checkbox.text = "Include Project Settings"
+		include_project_settings_checkbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		include_project_settings_checkbox.set_pressed(false)
+		options_grid.add_child(include_project_settings_checkbox)
 
 		# Add spacer
 		var spacer = Control.new()
@@ -169,12 +177,14 @@ func _on_export_confirmed() -> void:
 	var include_properties = include_properties_checkbox.is_pressed()
 	var include_signals = include_signals_checkbox.is_pressed()
 	var include_errors = include_errors_checkbox.is_pressed()
+	var include_project_settings = include_project_settings_checkbox.is_pressed()
 
 	# Find the highest selected node in the hierarchy
 	var selected_node = _find_highest_selected_node()
 
 	if selected_node:
-		emit_signal("export_hierarchy", selected_node, include_scripts, include_properties, include_signals, include_errors)
+		emit_signal("export_hierarchy", selected_node, include_scripts, include_properties,
+					include_signals, include_errors, include_project_settings)
 
 	current_root = null
 
