@@ -101,7 +101,8 @@ func _on_error_dialog_closed(dialog):
         dialog.queue_free()
 
 func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_properties: bool,
-                         include_signals: bool, include_errors: bool, include_project_settings: bool) -> void:
+                         include_signals: bool, include_errors: bool, include_project_settings: bool,
+                         enabled_setting_categories: Array = []) -> void:
     # Get the error log if needed
     var error_log = []
     if include_errors:
@@ -110,7 +111,8 @@ func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_pr
     # Process the scene to get the hierarchy starting from the selected node
     var node_data = scene_processor.process_scene(selected_node, include_properties,
                                                  include_signals, error_log,
-                                                 include_project_settings)
+                                                 include_project_settings,
+                                                 enabled_setting_categories)
 
     # Create a fresh composite exporter for this export
     var exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
@@ -131,7 +133,7 @@ func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_pr
     if include_errors:
         exporter.add_exporter(error_context_exporter)
 
-    if include_project_settings:
+    if include_project_settings and not enabled_setting_categories.is_empty():
         exporter.add_exporter(project_config_exporter)
 
     # Generate the output

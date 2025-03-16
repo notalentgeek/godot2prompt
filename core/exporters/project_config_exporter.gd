@@ -4,9 +4,6 @@ extends "res://addons/godot2prompt/core/exporters/base_exporter.gd"
 # Project Configuration Exporter - adds project settings information
 # Useful for providing context about the project's configuration
 
-# Categories of settings to include (can be modified)
-var settings_categories = ["rendering", "physics", "input", "audio", "debug"]
-
 # Format the project configuration content
 func format_node_content(node_data) -> String:
 	var output = ""
@@ -14,12 +11,13 @@ func format_node_content(node_data) -> String:
 	# We only add project settings at the root node level
 	if node_data.depth == 0 and "project_settings" in node_data:
 		var project_settings = node_data.project_settings
+		var enabled_categories = node_data.enabled_setting_categories if "enabled_setting_categories" in node_data else []
 
-		if project_settings and not project_settings.is_empty():
+		if project_settings and not project_settings.is_empty() and not enabled_categories.is_empty():
 			output += "\n\n# Project Settings\n"
 
 			# Group settings by category
-			for category in settings_categories:
+			for category in enabled_categories:
 				var category_settings = []
 
 				# Gather settings for this category
@@ -43,3 +41,25 @@ func format_node_content(node_data) -> String:
 # Helper method to sort settings by name
 func _sort_settings_by_name(a, b):
 	return a.name < b.name
+
+# Get all available setting categories
+static func get_setting_categories() -> Array:
+	var categories = {}
+	var all_settings = ProjectSettings.get_property_list()
+
+	for setting in all_settings:
+		if setting.name.begins_with("_") or setting.name.begins_with("gdscript") or setting.name.begins_with("editor"):
+			continue
+
+		var parts = setting.name.split("/")
+		if parts.size() > 1:
+			categories[parts[0]] = true
+
+	var result = []
+	for category in categories.keys():
+		result.append(category)
+
+	# Sort alphabetically
+	result.sort()
+
+	return result

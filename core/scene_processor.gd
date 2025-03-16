@@ -9,13 +9,15 @@ class NodeData:
 	var properties: Dictionary
 	var signals: Array
 	var error_log: Array
-	var project_settings: Array # Added project_settings
+	var project_settings: Array
+	var enabled_setting_categories: Array  # Added enabled categories
 	var children: Array
 	var depth: int
 
 	func _init(p_name: String, p_class: String, p_depth: int, p_script: String = "",
 			   p_properties: Dictionary = {}, p_signals: Array = [],
-			   p_error_log: Array = [], p_project_settings: Array = []):
+			   p_error_log: Array = [], p_project_settings: Array = [],
+			   p_enabled_setting_categories: Array = []):
 		name = p_name
 		type = p_class
 		depth = p_depth
@@ -24,24 +26,28 @@ class NodeData:
 		signals = p_signals
 		error_log = p_error_log
 		project_settings = p_project_settings
+		enabled_setting_categories = p_enabled_setting_categories
 		children = []
 
 # Process the scene and gather data
 func process_scene(root: Node, include_properties: bool = false,
 				  include_signals: bool = false, error_log: Array = [],
-				  include_project_settings: bool = false) -> NodeData:
+				  include_project_settings: bool = false,
+				  enabled_setting_categories: Array = []) -> NodeData:
 	var project_settings = []
 
 	# If project settings are requested, collect them
 	if include_project_settings:
 		project_settings = _extract_project_settings()
 
-	return _process_node(root, 0, include_properties, include_signals, error_log, project_settings)
+	return _process_node(root, 0, include_properties, include_signals, error_log,
+						 project_settings, enabled_setting_categories)
 
 # Recursively process each node
 func _process_node(node: Node, depth: int, include_properties: bool,
 				  include_signals: bool, error_log: Array = [],
-				  project_settings: Array = []) -> NodeData:
+				  project_settings: Array = [],
+				  enabled_setting_categories: Array = []) -> NodeData:
 	var script_code = ""
 	var properties = {}
 	var signals_data = []
@@ -62,10 +68,11 @@ func _process_node(node: Node, depth: int, include_properties: bool,
 	var node_data
 	if depth == 0:
 		node_data = NodeData.new(node.name, node.get_class(), depth, script_code,
-								 properties, signals_data, error_log, project_settings)
+								 properties, signals_data, error_log, project_settings,
+								 enabled_setting_categories)
 	else:
 		node_data = NodeData.new(node.name, node.get_class(), depth, script_code,
-								 properties, signals_data, [], [])
+								 properties, signals_data, [], [], [])
 
 	# Process all children
 	for child in node.get_children():
@@ -262,5 +269,5 @@ func _find_signals_targeting_node(search_node: Node, target_node: Node, signals_
 
 	# Check all children recursively
 	for child in search_node.get_children():
-		if child != target_node: # Skip the target node itself
+		if child != target_node:  # Skip the target node itself
 			_find_signals_targeting_node(child, target_node, signals_data)
