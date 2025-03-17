@@ -10,9 +10,11 @@ var properties_exporter
 var signal_exporter
 var error_context_exporter
 var project_config_exporter
+var screenshot_exporter
 var composite_exporter
 var file_handler
 var error_logger
+var screenshot_manager
 
 func _enter_tree() -> void:
     menu = get_editor_interface()
@@ -26,9 +28,11 @@ func _enter_tree() -> void:
     signal_exporter = load("res://addons/godot2prompt/core/exporters/signal_exporter.gd").new()
     error_context_exporter = load("res://addons/godot2prompt/core/exporters/error_context_exporter.gd").new()
     project_config_exporter = load("res://addons/godot2prompt/core/exporters/project_config_exporter.gd").new()
+    screenshot_exporter = load("res://addons/godot2prompt/core/exporters/screenshot_exporter.gd").new()
     composite_exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
     file_handler = load("res://addons/godot2prompt/core/io/file_handler.gd").new()
     error_logger = load("res://addons/godot2prompt/core/error_logger.gd").new()
+    screenshot_manager = load("res://addons/godot2prompt/core/screenshot_manager.gd").new()
 
     # Setup error monitoring
     _setup_error_monitoring()
@@ -36,12 +40,16 @@ func _enter_tree() -> void:
     # Setup tool menu with the new name
     add_tool_menu_item("Scene to Prompt", export_scene_hierarchy)
 
+    # Add quick export option for convenience
+    add_tool_menu_item("Quick Scene Export with Screenshot", quick_export_with_screenshot)
+
 func _exit_tree() -> void:
     # Stop error monitoring
     error_logger.stop_monitoring()
 
     # Cleanup
     remove_tool_menu_item("Scene to Prompt")
+    remove_tool_menu_item("Quick Scene Export with Screenshot")
 
     # No need to call queue_free on RefCounted objects - just set to null
     ui_manager = null
@@ -52,9 +60,11 @@ func _exit_tree() -> void:
     signal_exporter = null
     error_context_exporter = null
     project_config_exporter = null
+    screenshot_exporter = null
     composite_exporter = null
     file_handler = null
     error_logger = null
+    screenshot_manager = null
 
 # Setup error monitoring
 func _setup_error_monitoring() -> void:
@@ -95,6 +105,74 @@ func export_scene_hierarchy() -> void:
         error_dialog.connect("confirmed", Callable(self, "_on_error_dialog_closed").bind(error_dialog))
         error_dialog.connect("canceled", Callable(self, "_on_error_dialog_closed").bind(error_dialog))
 
+# Quick export method that automatically includes screenshot
+func quick_export_with_screenshot() -> void:
+    var root = menu.get_edited_scene_root()
+    if root:
+        # Take screenshot
+        var screenshot_path = screenshot_manager.capture_editor_screenshot(menu)
+
+        # Default quick export options
+        var include_properties = true
+        var include_signals = false
+        var include_scripts = false
+        var include_errors = false
+        var include_project_settings = false
+        var enabled_setting_categories = []
+
+        # Process the scene
+        var node_data = scene_processor.process_scene(root, include_properties,
+                                                     include_signals, [],
+                                                     include_project_settings,
+                                                     enabled_setting_categories,
+                                                     screenshot_path)
+
+        # Create a composite exporter for this export
+        var exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
+
+        # Add necessary exporters
+        exporter.add_exporter(tree_exporter)
+
+        if include_properties:
+            exporter.add_exporter(properties_exporter)
+
+        if screenshot_path != "":
+            exporter.add_exporter(screenshot_exporter)
+
+        # Generate the output
+        var output_text = exporter.generate_output(node_data)
+
+        # Save the file
+        file_handler.save_to_file("res://scene_hierarchy.txt", output_text)
+
+        # Show notification
+        var notification = AcceptDialog.new()
+        notification.title = "Export Complete"
+        notification.dialog_text = "Scene hierarchy exported to scene_hierarchy.txt"
+        if screenshot_path != "":
+            notification.dialog_text += "\nScreenshot saved to " + screenshot_path
+
+        # Add to the editor and show
+        var base_control = menu.get_base_control()
+        base_control.add_child(notification)
+        notification.popup_centered()
+
+        # Clean up the notification after it's closed
+        notification.connect("confirmed", Callable(self, "_on_error_dialog_closed").bind(notification))
+    else:
+        # Show error message
+        var error_dialog = AcceptDialog.new()
+        error_dialog.title = "No Scene Open"
+        error_dialog.dialog_text = "Please open a scene before using Quick Export."
+
+        # Add to the editor and show
+        var base_control = menu.get_base_control()
+        base_control.add_child(error_dialog)
+        error_dialog.popup_centered()
+
+        # Clean up the dialog after it's closed
+        error_dialog.connect("confirmed", Callable(self, "_on_error_dialog_closed").bind(error_dialog))
+
 func _on_error_dialog_closed(dialog):
     # Remove the dialog from the scene tree
     if dialog and is_instance_valid(dialog):
@@ -102,7 +180,18 @@ func _on_error_dialog_closed(dialog):
 
 func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_properties: bool,
                          include_signals: bool, include_errors: bool, include_project_settings: bool,
-                         enabled_setting_categories: Array = []) -> void:
+                         enabled_setting_categories: Array = [], include_screenshot: bool = false) -> void:
+    # Take screenshot if requested
+    var screenshot_path = ""
+    var screenshot_error = false
+
+    if include_screenshot:
+        # Try to capture screenshot, but don't let it break the export if it fails
+        screenshot_path = screenshot_manager.capture_editor_screenshot(menu)
+        if screenshot_path.is_empty():
+            screenshot_error = true
+            print("Godot2Prompt: Screenshot capture failed, but continuing with export")
+
     # Get the error log if needed
     var error_log = []
     if include_errors:
@@ -112,7 +201,8 @@ func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_pr
     var node_data = scene_processor.process_scene(selected_node, include_properties,
                                                  include_signals, error_log,
                                                  include_project_settings,
-                                                 enabled_setting_categories)
+                                                 enabled_setting_categories,
+                                                 screenshot_path)
 
     # Create a fresh composite exporter for this export
     var exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
@@ -136,9 +226,33 @@ func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_pr
     if include_project_settings and not enabled_setting_categories.is_empty():
         exporter.add_exporter(project_config_exporter)
 
+    # Only add the screenshot exporter if the screenshot was successfully captured
+    if include_screenshot and not screenshot_path.is_empty():
+        exporter.add_exporter(screenshot_exporter)
+
     # Generate the output
     var output_text = exporter.generate_output(node_data)
 
     # Save the file
     file_handler.save_to_file("res://scene_hierarchy.txt", output_text)
-    print("Scene hierarchy exported to scene_hierarchy.txt")
+
+    # Show a notification
+    var notification = AcceptDialog.new()
+    notification.title = "Export Complete"
+    notification.dialog_text = "Scene hierarchy exported to scene_hierarchy.txt"
+
+    if include_screenshot:
+        if not screenshot_path.is_empty():
+            notification.dialog_text += "\nScreenshot saved to " + screenshot_path
+        else:
+            notification.dialog_text += "\nScreenshot capture failed"
+
+    # Add to the editor and show
+    var base_control = menu.get_base_control()
+    base_control.add_child(notification)
+    notification.popup_centered()
+
+    # Clean up the notification after it's closed
+    notification.connect("confirmed", Callable(self, "_on_error_dialog_closed").bind(notification))
+
+    print("Godot2Prompt: Scene hierarchy exported to scene_hierarchy.txt")

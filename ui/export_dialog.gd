@@ -1,7 +1,7 @@
 @tool
 extends RefCounted
 
-signal export_hierarchy(selected_node, include_scripts, include_properties, include_signals, include_errors, include_project_settings, enabled_setting_categories)
+signal export_hierarchy(selected_node, include_scripts, include_properties, include_signals, include_errors, include_project_settings, enabled_setting_categories, include_screenshot)
 
 var dialog: Window = null
 var current_root: Node = null
@@ -10,13 +10,14 @@ var include_properties_checkbox: CheckBox = null
 var include_signals_checkbox: CheckBox = null
 var include_errors_checkbox: CheckBox = null
 var include_project_settings_checkbox: CheckBox = null
+var include_screenshot_checkbox: CheckBox = null  # Screenshot checkbox
 var settings_categories_container: VBoxContainer = null
 var categories_label: Label = null
 var categories_scroll: ScrollContainer = null
-var category_checkboxes = {} # Dictionary of category name to checkbox
+var category_checkboxes = {}  # Dictionary of category name to checkbox
 var tree: Tree = null
 var root_item: TreeItem = null
-var node_items = {} # Dictionary to map TreeItems to Nodes
+var node_items = {}  # Dictionary to map TreeItems to Nodes
 
 # Special category names that should be capitalized differently
 var special_capitalizations = {
@@ -61,7 +62,7 @@ func initialize(parent_control: Control) -> void:
 
 		# Configure the dialog
 		dialog.title = "Scene to Prompt"
-		dialog.min_size = Vector2(500, 500) # Larger dialog size for categories
+		dialog.min_size = Vector2(500, 500)  # Larger dialog size for categories
 
 		# Create main container with tabs
 		var main_tabs = TabContainer.new()
@@ -150,6 +151,14 @@ func initialize(parent_control: Control) -> void:
 		include_project_settings_checkbox.set_pressed(false)
 		include_project_settings_checkbox.connect("toggled", Callable(self, "_on_project_settings_toggled"))
 		options_grid.add_child(include_project_settings_checkbox)
+
+		# Add screenshot checkbox
+		include_screenshot_checkbox = CheckBox.new()
+		include_screenshot_checkbox.text = "Include Screenshot"
+		include_screenshot_checkbox.tooltip_text = "Captures the current editor viewport"
+		include_screenshot_checkbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		include_screenshot_checkbox.set_pressed(true)  # Enable by default
+		options_grid.add_child(include_screenshot_checkbox)
 
 		# Add spacer after main options
 		var spacer = Control.new()
@@ -248,7 +257,7 @@ func _populate_settings_categories() -> void:
 	for category in categories:
 		var checkbox = CheckBox.new()
 		checkbox.text = _format_category_name(category)
-		checkbox.set_pressed(true) # All categories checked by default
+		checkbox.set_pressed(true)  # All categories checked by default
 		settings_categories_container.add_child(checkbox)
 
 		# Store reference to checkbox
@@ -303,6 +312,7 @@ func _on_export_confirmed() -> void:
 	var include_signals = include_signals_checkbox.is_pressed()
 	var include_errors = include_errors_checkbox.is_pressed()
 	var include_project_settings = include_project_settings_checkbox.is_pressed()
+	var include_screenshot = include_screenshot_checkbox.is_pressed()
 
 	# Get enabled setting categories
 	var enabled_setting_categories = []
@@ -317,7 +327,7 @@ func _on_export_confirmed() -> void:
 	if selected_node:
 		emit_signal("export_hierarchy", selected_node, include_scripts, include_properties,
 					include_signals, include_errors, include_project_settings,
-					enabled_setting_categories)
+					enabled_setting_categories, include_screenshot)
 
 	current_root = null
 
