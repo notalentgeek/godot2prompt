@@ -2,7 +2,7 @@
 extends RefCounted
 
 signal export_hierarchy(selected_node, include_scripts, include_properties, include_signals, include_errors, include_project_settings, enabled_setting_categories, include_screenshot)
-# Remove export_progress signal for now
+signal export_progress(progress, message)
 
 # Core UI components
 var dialog: Window = null
@@ -48,8 +48,11 @@ func initialize(parent_control: Control) -> void:
 		main_tabs.set_tab_title(1, "Options")
 
 		# Initialize progress dialog
-		progress_dialog = load("res://addons/godot2prompt/ui/components/export_progress_dialog.gd").new()
+		# Fix: Load the script and create an instance properly
+		var progress_dialog_script = load("res://addons/godot2prompt/ui/components/export_progress_dialog.gd")
+		progress_dialog = progress_dialog_script.new()
 		progress_dialog.initialize(parent_control)
+		print("Progress dialog initialized")
 
 		# Setup dialog buttons
 		dialog.get_ok_button().text = "Export"
@@ -74,6 +77,9 @@ func show_dialog(root_node: Node) -> void:
 		dialog.popup_centered()
 
 func _on_export_confirmed() -> void:
+	print("Export confirmed, showing progress dialog")
+	show_progress() # Show progress dialog immediately when export is confirmed
+
 	# Get options from the options tab manager
 	var export_options = options_tab_manager.get_export_options()
 
@@ -101,18 +107,35 @@ func _on_export_confirmed() -> void:
 func _on_canceled() -> void:
 	current_root = null
 
-# Add these methods to handle progress dialog
+# Progress dialog control methods
 func show_progress() -> void:
-	# Show progress dialog without progress bar implementation
-	pass
+	print("Showing progress dialog")
+	if progress_dialog:
+		progress_dialog.show_progress()
+		print("Progress dialog show_progress called")
+	else:
+		print("Error: progress_dialog is null")
 
 func hide_progress_dialog() -> void:
-	# Hide progress dialog
-	pass
+	print("Hiding progress dialog")
+	if progress_dialog:
+		progress_dialog.hide_progress()
+	else:
+		print("Error: progress_dialog is null when trying to hide")
+
+func update_progress(progress: int, message: String) -> void:
+	print("Updating progress: ", progress, "% - ", message)
+	if progress_dialog:
+		progress_dialog.update_progress(progress, message)
+	else:
+		print("Error: progress_dialog is null when updating progress")
 
 func finalize_export() -> void:
-	# Empty implementation to satisfy the call in plugin.gd
-	pass
+	print("Finalizing export")
+	if progress_dialog:
+		progress_dialog.update_progress(100, "Export completed!")
+	else:
+		print("Error: progress_dialog is null when finalizing")
 
 func _notification(what):
 	if what == NOTIFICATION_PREDELETE:

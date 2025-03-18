@@ -16,6 +16,7 @@ var file_handler
 var error_logger
 var screenshot_manager
 var export_timer: Timer = null
+var completion_timer: Timer = null
 
 func _enter_tree() -> void:
     menu = get_editor_interface()
@@ -48,6 +49,13 @@ func _enter_tree() -> void:
     export_timer.connect("timeout", Callable(self, "_on_export_timer_timeout"))
     add_child(export_timer)
 
+    # Create completion timer (longer delay before hiding progress)
+    completion_timer = Timer.new()
+    completion_timer.one_shot = true
+    completion_timer.wait_time = 2.0  # 2 seconds to see completion
+    completion_timer.connect("timeout", Callable(self, "_on_completion_timer_timeout"))
+    add_child(completion_timer)
+
     # Setup error monitoring
     _setup_error_monitoring()
 
@@ -65,10 +73,14 @@ func _exit_tree() -> void:
     remove_tool_menu_item("Scene to Prompt")
     remove_tool_menu_item("Quick Scene Export with Screenshot")
 
-    # Remove the timer
+    # Remove the timers
     if export_timer:
         export_timer.queue_free()
         export_timer = null
+
+    if completion_timer:
+        completion_timer.queue_free()
+        completion_timer = null
 
     # No need to call queue_free on RefCounted objects - just set to null
     ui_manager = null
@@ -91,7 +103,6 @@ func _setup_error_monitoring() -> void:
     if error_logger.log_check_timer and not error_logger.log_check_timer.is_inside_tree():
         add_child(error_logger.log_check_timer)
         error_logger.log_check_timer.start()
-        print("Godot2Prompt: Error monitoring started")
 
     # Add some sample errors for testing
     error_logger.add_error("Sample error: Missing node reference in PlayerController.gd:34")
@@ -133,10 +144,16 @@ func quick_export_with_screenshot() -> void:
 
         # Show progress dialog
         ui_manager.show_progress()
-        # Remove emit_signal for export_progress
+
+        # Add a small delay before updating progress to ensure dialog is rendered
+        await get_tree().create_timer(0.1).timeout
+
+        ui_manager.update_progress(10, "Initializing quick export...")
+        await get_tree().create_timer(0.1).timeout
 
         # Take screenshot
-        # Remove emit_signal for export_progress
+        ui_manager.update_progress(20, "Capturing screenshot...")
+        await get_tree().create_timer(0.1).timeout
         var screenshot_path = screenshot_manager.capture_editor_screenshot(menu)
 
         # Default quick export options
@@ -148,7 +165,8 @@ func quick_export_with_screenshot() -> void:
         var enabled_setting_categories = []
 
         # Process the scene
-        # Remove emit_signal for export_progress
+        ui_manager.update_progress(40, "Processing scene nodes...")
+        await get_tree().create_timer(0.1).timeout
         var node_data = scene_processor.process_scene(root, include_properties,
                                                   include_signals, [],
                                                   include_project_settings,
@@ -156,7 +174,8 @@ func quick_export_with_screenshot() -> void:
                                                   screenshot_path)
 
         # Create a composite exporter for this export
-        # Remove emit_signal for export_progress
+        ui_manager.update_progress(60, "Setting up exporters...")
+        await get_tree().create_timer(0.1).timeout
         var exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
 
         # Add necessary exporters
@@ -169,18 +188,20 @@ func quick_export_with_screenshot() -> void:
             exporter.add_exporter(screenshot_exporter)
 
         # Generate the output
-        # Remove emit_signal for export_progress
+        ui_manager.update_progress(80, "Generating output text...")
+        await get_tree().create_timer(0.1).timeout
         var output_text = exporter.generate_output(node_data)
 
         # Save the file
-        # Remove emit_signal for export_progress
+        ui_manager.update_progress(90, "Saving to file...")
+        await get_tree().create_timer(0.1).timeout
         file_handler.save_to_file("res://scene_hierarchy.txt", output_text)
 
         # Complete progress
-        # Remove emit_signal for export_progress
+        ui_manager.update_progress(100, "Export complete!")
 
-        # Use our timer to hide the progress dialog after a short delay
-        export_timer.start()
+        # Use our timer to hide the progress dialog after a delay
+        completion_timer.start()
 
         # Show notification
         var notification = AcceptDialog.new()
@@ -220,18 +241,34 @@ func _on_export_timer_timeout():
     if ui_manager:
         ui_manager.hide_progress_dialog()
 
+func _on_completion_timer_timeout():
+    # Called when the completion timer expires (longer delay for 100%)
+    if ui_manager:
+        ui_manager.hide_progress_dialog()
+
 func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_properties: bool,
                          include_signals: bool, include_errors: bool, include_project_settings: bool,
                          enabled_setting_categories: Array = [], include_screenshot: bool = false) -> void:
+    # Show progress immediately when export starts
+    ui_manager.show_progress()
+
+    # Small delay to ensure the dialog is rendered
+    get_tree().create_timer(0.1).timeout
+
     # Update progress - preparing for export
-    # Remove emit_signal for export_progress
+    ui_manager.update_progress(20, "Preparing export options...")
+
+    # Add another small delay
+    get_tree().create_timer(0.1).timeout
+
     # Take screenshot if requested - with better error handling
     var screenshot_path = ""
     var screenshot_error = false
 
     if include_screenshot:
         # Try to capture screenshot, but handle all errors
-        # Remove emit_signal for export_progress
+        ui_manager.update_progress(30, "Creating scene visualization...")
+
         # Use a deferred call to prevent errors during UI updates
         call_deferred("_capture_screenshot_deferred", include_scripts, include_properties,
                      include_signals, include_errors, include_project_settings,
@@ -255,7 +292,6 @@ func _capture_screenshot_deferred(include_scripts: bool, include_properties: boo
     screenshot_path = screenshot_manager.capture_editor_screenshot(menu)
     if screenshot_path.is_empty():
         screenshot_error = true
-        print("Godot2Prompt: Screenshot creation completed with fallback path")
 
     # Continue with the rest of the export process
     _continue_export_with_screenshot(selected_node, include_scripts, include_properties,
@@ -282,11 +318,13 @@ func _continue_export_without_screenshot(selected_node: Node, include_scripts: b
     # Get the error log if needed
     var error_log = []
     if include_errors:
-        # Remove emit_signal for export_progress
+        ui_manager.update_progress(40, "Collecting error logs...")
+        await get_tree().create_timer(0.1).timeout
         error_log = error_logger.get_errors()
 
     # Process the scene to get the hierarchy starting from the selected node
-    # Remove emit_signal for export_progress
+    ui_manager.update_progress(50, "Processing scene nodes...")
+    await get_tree().create_timer(0.1).timeout
     var node_data = null
 
     # Try to process scene with error handling
@@ -298,10 +336,9 @@ func _continue_export_without_screenshot(selected_node: Node, include_scripts: b
                                                 screenshot_path)
 
     if node_data == null:
-        # Remove emit_signal for export_progress
-        # Call finalize but we've now implemented an empty version
+        ui_manager.update_progress(100, "Export failed - could not process scene")
         ui_manager.finalize_export()
-        export_timer.start()
+        completion_timer.start()
 
         # Show error notification
         var error_notification = AcceptDialog.new()
@@ -314,7 +351,8 @@ func _continue_export_without_screenshot(selected_node: Node, include_scripts: b
         return
 
     # Create a fresh composite exporter for this export
-    # Remove emit_signal for export_progress
+    ui_manager.update_progress(60, "Setting up exporters...")
+    await get_tree().create_timer(0.1).timeout
     var exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
 
     # The tree exporter is always included for the base structure
@@ -340,18 +378,20 @@ func _continue_export_without_screenshot(selected_node: Node, include_scripts: b
         exporter.add_exporter(screenshot_exporter)
 
     # Generate the output
-    # Remove emit_signal for export_progress
+    ui_manager.update_progress(80, "Generating output text...")
+    await get_tree().create_timer(0.1).timeout
     var output_text = exporter.generate_output(node_data)
 
     # Save the file
-    # Remove emit_signal for export_progress
+    ui_manager.update_progress(90, "Saving to file...")
+    await get_tree().create_timer(0.1).timeout
     file_handler.save_to_file("res://scene_hierarchy.txt", output_text)
 
     # Finalize progress
     ui_manager.finalize_export()
 
-    # Start the timer to hide the progress dialog after a short delay
-    export_timer.start()
+    # Start the timer to hide the progress dialog after a longer delay
+    completion_timer.start()
 
     # Show a notification
     var notification = AcceptDialog.new()
@@ -367,5 +407,3 @@ func _continue_export_without_screenshot(selected_node: Node, include_scripts: b
 
     # Clean up the notification after it's closed
     notification.connect("confirmed", Callable(self, "_on_error_dialog_closed").bind(notification))
-
-    print("Godot2Prompt: Scene hierarchy exported to scene_hierarchy.txt")
