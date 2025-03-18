@@ -3,7 +3,7 @@ extends EditorPlugin
 
 var menu: EditorInterface
 var ui_manager
-var scene_processor
+var scene_manager
 var tree_exporter
 var code_exporter
 var properties_exporter
@@ -13,15 +13,21 @@ var project_config_exporter
 var screenshot_exporter
 var composite_exporter
 var file_handler
-var error_logger
+var error_manager
 var screenshot_manager
 
 func _enter_tree() -> void:
     menu = get_editor_interface()
 
-    # Initialize components
+    # Initialize managers
+    error_manager = load("res://addons/godot2prompt/core/managers/error_manager.gd").new()
+    scene_manager = load("res://addons/godot2prompt/core/managers/scene_manager.gd").new()
+    screenshot_manager = load("res://addons/godot2prompt/core/managers/screenshot_manager.gd").new()
+
+    # Initialize UI components
     ui_manager = load("res://addons/godot2prompt/ui/export_dialog.gd").new()
-    scene_processor = load("res://addons/godot2prompt/core/scene_processor.gd").new()
+
+    # Initialize exporters
     tree_exporter = load("res://addons/godot2prompt/core/exporters/tree_exporter.gd").new()
     code_exporter = load("res://addons/godot2prompt/core/exporters/code_exporter.gd").new()
     properties_exporter = load("res://addons/godot2prompt/core/exporters/properties_exporter.gd").new()
@@ -30,9 +36,9 @@ func _enter_tree() -> void:
     project_config_exporter = load("res://addons/godot2prompt/core/exporters/project_config_exporter.gd").new()
     screenshot_exporter = load("res://addons/godot2prompt/core/exporters/screenshot_exporter.gd").new()
     composite_exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
+
+    # Initialize IO handlers
     file_handler = load("res://addons/godot2prompt/core/io/file_handler.gd").new()
-    error_logger = load("res://addons/godot2prompt/core/error_logger.gd").new()
-    screenshot_manager = load("res://addons/godot2prompt/core/screenshot_manager.gd").new()
 
     # Setup error monitoring
     _setup_error_monitoring()
@@ -45,7 +51,7 @@ func _enter_tree() -> void:
 
 func _exit_tree() -> void:
     # Stop error monitoring
-    error_logger.stop_monitoring()
+    error_manager.stop_monitoring()
 
     # Cleanup
     remove_tool_menu_item("Scene to Prompt")
@@ -53,7 +59,7 @@ func _exit_tree() -> void:
 
     # No need to call queue_free on RefCounted objects - just set to null
     ui_manager = null
-    scene_processor = null
+    scene_manager = null
     tree_exporter = null
     code_exporter = null
     properties_exporter = null
@@ -63,20 +69,21 @@ func _exit_tree() -> void:
     screenshot_exporter = null
     composite_exporter = null
     file_handler = null
-    error_logger = null
+    error_manager = null
     screenshot_manager = null
 
 # Setup error monitoring
 func _setup_error_monitoring() -> void:
     # Add the timer to the scene tree
-    if error_logger.log_check_timer and not error_logger.log_check_timer.is_inside_tree():
-        add_child(error_logger.log_check_timer)
-        error_logger.log_check_timer.start()
+    var log_timer = error_manager.log_monitor.log_check_timer
+    if log_timer and not log_timer.is_inside_tree():
+        add_child(log_timer)
+        log_timer.start()
         print("Godot2Prompt: Error monitoring started")
 
     # Add some sample errors for testing
-    error_logger.add_error("Sample error: Missing node reference in PlayerController.gd:34")
-    error_logger.add_error("Sample error: Type mismatch in Enemy.gd:127 - Expected int but got String")
+    error_manager.add_error("Sample error: Missing node reference in PlayerController.gd:34")
+    error_manager.add_error("Sample error: Type mismatch in Enemy.gd:127 - Expected int but got String")
 
 # The menu will call this method
 func export_scene_hierarchy() -> void:
@@ -121,11 +128,11 @@ func quick_export_with_screenshot() -> void:
         var enabled_setting_categories = []
 
         # Process the scene
-        var node_data = scene_processor.process_scene(root, include_properties,
-                                                     include_signals, [],
-                                                     include_project_settings,
-                                                     enabled_setting_categories,
-                                                     screenshot_path)
+        var node_data = scene_manager.process_scene(root, include_properties,
+                                                  include_signals, [],
+                                                  include_project_settings,
+                                                  enabled_setting_categories,
+                                                  screenshot_path)
 
         # Create a composite exporter for this export
         var exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
@@ -195,14 +202,14 @@ func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_pr
     # Get the error log if needed
     var error_log = []
     if include_errors:
-        error_log = error_logger.get_errors()
+        error_log = error_manager.get_errors()
 
     # Process the scene to get the hierarchy starting from the selected node
-    var node_data = scene_processor.process_scene(selected_node, include_properties,
-                                                 include_signals, error_log,
-                                                 include_project_settings,
-                                                 enabled_setting_categories,
-                                                 screenshot_path)
+    var node_data = scene_manager.process_scene(selected_node, include_properties,
+                                              include_signals, error_log,
+                                              include_project_settings,
+                                              enabled_setting_categories,
+                                              screenshot_path)
 
     # Create a fresh composite exporter for this export
     var exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
@@ -226,8 +233,7 @@ func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_pr
     if include_project_settings and not enabled_setting_categories.is_empty():
         exporter.add_exporter(project_config_exporter)
 
-    # Only add the screenshot exporter if the screenshot was successfully captured
-    if include_screenshot and not screenshot_path.is_empty():
+    if include_screenshot and screenshot_path != "":
         exporter.add_exporter(screenshot_exporter)
 
     # Generate the output
@@ -240,12 +246,10 @@ func _on_export_hierarchy(selected_node: Node, include_scripts: bool, include_pr
     var notification = AcceptDialog.new()
     notification.title = "Export Complete"
     notification.dialog_text = "Scene hierarchy exported to scene_hierarchy.txt"
-
-    if include_screenshot:
-        if not screenshot_path.is_empty():
-            notification.dialog_text += "\nScreenshot saved to " + screenshot_path
-        else:
-            notification.dialog_text += "\nScreenshot capture failed"
+    if include_screenshot and not screenshot_path.is_empty():
+        notification.dialog_text += "\nScreenshot saved to " + screenshot_path
+    elif include_screenshot and screenshot_error:
+        notification.dialog_text += "\nScreenshot capture failed"
 
     # Add to the editor and show
     var base_control = menu.get_base_control()

@@ -1,13 +1,8 @@
 @tool
 extends RefCounted
 
-# Maximum number of errors to store
-const MAX_ERRORS = 10
 # Maximum number of log files to check
 const MAX_LOG_FILES = 3
-
-# Error log storage
-var error_log = []
 
 # Timer for periodically checking the log file
 var log_check_timer: Timer = null
@@ -21,7 +16,10 @@ var log_dir_path = ""
 # Regular expression for parsing errors
 var error_regex = RegEx.new()
 
-# Initialize the logger
+# Reference to error manager
+var error_manager = null
+
+# Initialize the log monitor
 func _init():
 	# Find the Godot log directory
 	_determine_log_dir_path()
@@ -75,7 +73,8 @@ func _initialize_log_positions() -> void:
 		print("Godot2Prompt: Could not access log directory at " + log_dir_path)
 
 # Start monitoring for errors
-func start_monitoring() -> void:
+func start_monitoring(manager) -> void:
+	error_manager = manager
 	if log_check_timer and not log_check_timer.is_inside_tree():
 		# This needs to be added to the scene tree by the plugin
 		pass
@@ -84,7 +83,8 @@ func start_monitoring() -> void:
 func stop_monitoring() -> void:
 	if log_check_timer and log_check_timer.is_inside_tree():
 		log_check_timer.stop()
-		log_check_timer.get_parent().remove_child(log_check_timer)
+		if log_check_timer.get_parent():
+			log_check_timer.get_parent().remove_child(log_check_timer)
 		print("Godot2Prompt: Error monitoring stopped")
 
 # Timer callback to check the log files
@@ -154,33 +154,11 @@ func _process_log_content(content: String) -> void:
 		var result = error_regex.search(line)
 		if result:
 			var error_line = line.strip_edges()
-			add_error(error_line)
+			if error_manager:
+				error_manager.add_error(error_line)
 
-# Add an error to the log
-func add_error(message: String) -> void:
-	# Check if this error is already logged (avoid duplicates)
-	if error_log.has(message):
-		return
-
-	# Add the error
-	error_log.append(message)
-
-	# Keep only the most recent errors
-	if error_log.size() > MAX_ERRORS:
-		error_log.pop_front()
-
-	print("Godot2Prompt: Captured error: " + message)
-
-# Clear the error log
-func clear_errors() -> void:
-	error_log.clear()
-
-# Get the current error log
-func get_errors() -> Array:
-	return error_log.duplicate()
-
-# Clean up
+# Clean up when being destroyed
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		if log_check_timer:
+		if log_check_timer and is_instance_valid(log_check_timer):
 			log_check_timer.queue_free()
