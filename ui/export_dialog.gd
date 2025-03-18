@@ -2,10 +2,12 @@
 extends RefCounted
 
 signal export_hierarchy(selected_node, include_scripts, include_properties, include_signals, include_errors, include_project_settings, enabled_setting_categories, include_screenshot)
+# Remove export_progress signal for now
 
 # Core UI components
 var dialog: Window = null
 var current_root: Node = null
+var progress_dialog = null
 
 # Component managers
 var scene_tab_manager = null
@@ -44,6 +46,10 @@ func initialize(parent_control: Control) -> void:
 		var options_tab = options_tab_manager.create_options_tab()
 		main_tabs.add_child(options_tab)
 		main_tabs.set_tab_title(1, "Options")
+
+		# Initialize progress dialog
+		progress_dialog = load("res://addons/godot2prompt/ui/components/export_progress_dialog.gd").new()
+		progress_dialog.initialize(parent_control)
 
 		# Setup dialog buttons
 		dialog.get_ok_button().text = "Export"
@@ -94,6 +100,19 @@ func _on_export_confirmed() -> void:
 
 func _on_canceled() -> void:
 	current_root = null
+
+# Add these methods to handle progress dialog
+func show_progress() -> void:
+	# Show progress dialog without progress bar implementation
+	pass
+
+func hide_progress_dialog() -> void:
+	# Hide progress dialog
+	pass
+
+func finalize_export() -> void:
+	# Empty implementation to satisfy the call in plugin.gd
+	pass
 
 func _notification(what):
 	if what == NOTIFICATION_PREDELETE:
