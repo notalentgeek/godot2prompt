@@ -1,16 +1,7 @@
 @tool
-extends RefCounted
+extends "res://addons/godot2prompt/ui/components/options/base_option.gd"
 
-var include_screenshot_checkbox: CheckBox = null
-
-func create_option() -> Control:
-	include_screenshot_checkbox = CheckBox.new()
-	include_screenshot_checkbox.text = "Include Screenshot"
-	include_screenshot_checkbox.tooltip_text = "Captures the current editor viewport"
-	include_screenshot_checkbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	include_screenshot_checkbox.set_pressed(false)
-
-	return include_screenshot_checkbox
-
-func is_enabled() -> bool:
-	return include_screenshot_checkbox.is_pressed()
+func _init():
+	option_text = "Include Screenshot"
+	option_tooltip = "Captures the current editor viewport"
+	default_state = false

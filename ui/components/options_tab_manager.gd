@@ -5,23 +5,18 @@ extends RefCounted
 var options_tab: VBoxContainer = null
 var options_grid: GridContainer = null
 
-# Option managers
-var scripts_option = null
-var properties_option = null
-var signals_option = null
-var errors_option = null
-var project_settings_option = null
-var screenshot_option = null
-
-# Cached options for reuse
-var export_options = {
-	"include_scripts": false,
-	"include_properties": false,
-	"include_signals": false,
-	"include_errors": false,
-	"include_project_settings": false,
-	"include_screenshot": true
+# Option managers - using a more standardized approach
+var option_classes = {
+	"scripts": "res://addons/godot2prompt/ui/components/options/scripts_option.gd",
+	"properties": "res://addons/godot2prompt/ui/components/options/properties_option.gd",
+	"signals": "res://addons/godot2prompt/ui/components/options/signals_option.gd",
+	"errors": "res://addons/godot2prompt/ui/components/options/errors_option.gd",
+	"project_settings": "res://addons/godot2prompt/ui/components/options/project_settings_option.gd",
+	"screenshot": "res://addons/godot2prompt/ui/components/options/screenshot_option.gd"
 }
+
+# Option instances
+var options = {}
 
 func create_options_tab() -> Control:
 	# Create options tab container
@@ -40,47 +35,44 @@ func create_options_tab() -> Control:
 	options_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	options_tab.add_child(options_grid)
 
-	# Initialize option managers
-	scripts_option = load("res://addons/godot2prompt/ui/components/options/scripts_option.gd").new()
-	properties_option = load("res://addons/godot2prompt/ui/components/options/properties_option.gd").new()
-	signals_option = load("res://addons/godot2prompt/ui/components/options/signals_option.gd").new()
-	errors_option = load("res://addons/godot2prompt/ui/components/options/errors_option.gd").new()
-	project_settings_option = load("res://addons/godot2prompt/ui/components/options/project_settings_option.gd").new()
-	screenshot_option = load("res://addons/godot2prompt/ui/components/options/screenshot_option.gd").new()
+	# Initialize option instances
+	_initialize_options()
 
-	# Add options to grid
-	options_grid.add_child(scripts_option.create_option())
-	options_grid.add_child(properties_option.create_option())
-	options_grid.add_child(signals_option.create_option())
-	options_grid.add_child(errors_option.create_option())
-	options_grid.add_child(project_settings_option.create_option())
-	options_grid.add_child(screenshot_option.create_option())
+	# Add project settings category section if needed
+	if "project_settings" in options:
+		var spacer = Control.new()
+		spacer.custom_minimum_size = Vector2(0, 10)
+		options_tab.add_child(spacer)
 
-	# Add project settings category section
-	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 10)
-	options_tab.add_child(spacer)
-
-	# Add container for settings categories
-	options_tab.add_child(project_settings_option.get_categories_container())
+		# Add container for settings categories
+		options_tab.add_child(options.project_settings.get_categories_container())
 
 	return options_tab
 
+# Initialize all option instances
+func _initialize_options() -> void:
+	for option_key in option_classes.keys():
+		var option_script = load(option_classes[option_key])
+		if option_script:
+			options[option_key] = option_script.new()
+			options_grid.add_child(options[option_key].create_option())
+
 # Get export options from all option components
 func get_export_options() -> Dictionary:
-	export_options.include_scripts = scripts_option.is_enabled()
-	export_options.include_properties = properties_option.is_enabled()
-	export_options.include_signals = signals_option.is_enabled()
-	export_options.include_errors = errors_option.is_enabled()
-	export_options.include_project_settings = project_settings_option.is_enabled()
-	export_options.include_screenshot = screenshot_option.is_enabled()
+	var export_options = {}
+
+	for option_key in options.keys():
+		export_options["include_" + option_key] = options[option_key].is_enabled()
 
 	return export_options
 
-# Populate project settings categories
+# Populate project settings categories if they exist
 func populate_settings_categories() -> void:
-	project_settings_option.populate_categories()
+	if "project_settings" in options:
+		options.project_settings.populate_categories()
 
 # Get enabled setting categories
 func get_enabled_setting_categories() -> Array:
-	return project_settings_option.get_enabled_categories()
+	if "project_settings" in options:
+		return options.project_settings.get_enabled_categories()
+	return []

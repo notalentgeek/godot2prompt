@@ -1,8 +1,7 @@
 @tool
-extends RefCounted
+extends "res://addons/godot2prompt/ui/components/options/base_option.gd"
 
 # UI components
-var include_project_settings_checkbox: CheckBox = null
 var categories_label: Label = null
 var categories_scroll: ScrollContainer = null
 var settings_categories_container: VBoxContainer = null
@@ -43,13 +42,14 @@ var special_capitalizations = {
 	"xr": "XR",
 }
 
-func create_option() -> Control:
-	include_project_settings_checkbox = CheckBox.new()
-	include_project_settings_checkbox.text = "Include Project Settings"
-	include_project_settings_checkbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	include_project_settings_checkbox.set_pressed(false)
-	include_project_settings_checkbox.tooltip_text = "Include selected project settings in the export"
-	include_project_settings_checkbox.connect("toggled", Callable(self, "_on_project_settings_toggled"))
+func _init():
+	option_text = "Include Project Settings"
+	option_tooltip = "Include selected project settings in the export"
+	default_state = false
+
+# Override _setup_option to add toggled signal connection
+func _setup_option() -> void:
+	checkbox.connect("toggled", Callable(self, "_on_project_settings_toggled"))
 
 	# Create categories container
 	categories_container = VBoxContainer.new()
@@ -74,14 +74,9 @@ func create_option() -> Control:
 	settings_categories_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	categories_scroll.add_child(settings_categories_container)
 
-	return include_project_settings_checkbox
-
 # Get the container for categories to add to the main options tab
 func get_categories_container() -> Control:
 	return categories_container
-
-func is_enabled() -> bool:
-	return include_project_settings_checkbox.is_pressed()
 
 func _on_project_settings_toggled(button_pressed: bool) -> void:
 	# Show/hide the categories section based on checkbox state
