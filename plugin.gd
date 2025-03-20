@@ -3,7 +3,7 @@ extends EditorPlugin
 
 var menu: EditorInterface
 var ui_manager
-var scene_processor
+var scene_manager # Changed from scene_processor
 var tree_exporter
 var code_exporter
 var properties_exporter
@@ -13,7 +13,7 @@ var project_config_exporter
 var screenshot_exporter
 var composite_exporter
 var file_handler
-var error_logger
+var error_manager
 var screenshot_manager
 var export_timer: Timer = null
 var completion_timer: Timer = null
@@ -22,9 +22,10 @@ func _enter_tree() -> void:
     menu = get_editor_interface()
 
     # Initialize components using your current directory structure
-    error_logger = load("res://addons/godot2prompt/core/error_logger.gd").new()
-    scene_processor = load("res://addons/godot2prompt/core/scene_processor.gd").new()
-    screenshot_manager = load("res://addons/godot2prompt/core/screenshot_manager.gd").new()
+    error_manager = load("res://addons/godot2prompt/core/managers/error_manager.gd").new()
+    # Fix the path to scene_manager
+    scene_manager = load("res://addons/godot2prompt/core/managers/scene_manager.gd").new()
+    screenshot_manager = load("res://addons/godot2prompt/core/managers/screenshot_manager.gd").new()
 
     # Initialize UI components
     ui_manager = load("res://addons/godot2prompt/ui/export_dialog.gd").new()
@@ -52,7 +53,7 @@ func _enter_tree() -> void:
     # Create completion timer (longer delay before hiding progress)
     completion_timer = Timer.new()
     completion_timer.one_shot = true
-    completion_timer.wait_time = 2.0  # 2 seconds to see completion
+    completion_timer.wait_time = 2.0 # 2 seconds to see completion
     completion_timer.connect("timeout", Callable(self, "_on_completion_timer_timeout"))
     add_child(completion_timer)
 
@@ -65,13 +66,17 @@ func _enter_tree() -> void:
     # Add quick export option for convenience
     add_tool_menu_item("Quick Scene Export with Screenshot", quick_export_with_screenshot)
 
+    # Copy to clipboard is now in the export dialog itself, so we don't need a separate menu item
+    # Removing: add_tool_menu_item("Copy Scene Hierarchy to Clipboard", copy_hierarchy_to_clipboard)
+
 func _exit_tree() -> void:
     # Stop error monitoring
-    error_logger.stop_monitoring()
+    error_manager.stop_monitoring()
 
     # Cleanup
     remove_tool_menu_item("Scene to Prompt")
     remove_tool_menu_item("Quick Scene Export with Screenshot")
+    # Removing: remove_tool_menu_item("Copy Scene Hierarchy to Clipboard")
 
     # Remove the timers
     if export_timer:
@@ -84,7 +89,7 @@ func _exit_tree() -> void:
 
     # No need to call queue_free on RefCounted objects - just set to null
     ui_manager = null
-    scene_processor = null
+    scene_manager = null # Changed from scene_processor
     tree_exporter = null
     code_exporter = null
     properties_exporter = null
@@ -94,19 +99,23 @@ func _exit_tree() -> void:
     screenshot_exporter = null
     composite_exporter = null
     file_handler = null
-    error_logger = null
+    error_manager = null
     screenshot_manager = null
 
 # Setup error monitoring
 func _setup_error_monitoring() -> void:
     # Add the timer to the scene tree
-    if error_logger.log_check_timer and not error_logger.log_check_timer.is_inside_tree():
-        add_child(error_logger.log_check_timer)
-        error_logger.log_check_timer.start()
+    if error_manager.log_monitor and error_manager.log_monitor.log_check_timer and not error_manager.log_monitor.log_check_timer.is_inside_tree():
+        add_child(error_manager.log_monitor.log_check_timer)
+        error_manager.log_monitor.log_check_timer.start()
+        print("Godot2Prompt: Error monitoring started")
 
     # Add some sample errors for testing
-    error_logger.add_error("Sample error: Missing node reference in PlayerController.gd:34")
-    error_logger.add_error("Sample error: Type mismatch in Enemy.gd:127 - Expected int but got String")
+    error_manager.add_error("Sample error: Missing node reference in PlayerController.gd:34")
+    error_manager.add_error("Sample error: Type mismatch in Enemy.gd:127 - Expected int but got String")
+
+# We're removing the standalone clipboard function since it's now in the export dialog
+# Removing: func copy_hierarchy_to_clipboard() -> void { ... }
 
 # The menu will call this method
 func export_scene_hierarchy() -> void:
@@ -164,10 +173,10 @@ func quick_export_with_screenshot() -> void:
         var include_project_settings = false
         var enabled_setting_categories = []
 
-        # Process the scene
+        # Process the scene - Updated to use scene_manager instead of scene_processor
         ui_manager.update_progress(40, "Processing scene nodes...")
         await get_tree().create_timer(0.1).timeout
-        var node_data = scene_processor.process_scene(root, include_properties,
+        var node_data = scene_manager.process_scene(root, include_properties,
                                                   include_signals, [],
                                                   include_project_settings,
                                                   enabled_setting_categories,
@@ -320,16 +329,16 @@ func _continue_export_without_screenshot(selected_node: Node, include_scripts: b
     if include_errors:
         ui_manager.update_progress(40, "Collecting error logs...")
         await get_tree().create_timer(0.1).timeout
-        error_log = error_logger.get_errors()
+        error_log = error_manager.get_errors()
 
     # Process the scene to get the hierarchy starting from the selected node
     ui_manager.update_progress(50, "Processing scene nodes...")
     await get_tree().create_timer(0.1).timeout
     var node_data = null
 
-    # Try to process scene with error handling
-    if scene_processor != null and scene_processor.has_method("process_scene") and selected_node != null:
-        node_data = scene_processor.process_scene(selected_node, include_properties,
+    # Try to process scene with error handling - Update to use scene_manager
+    if scene_manager != null and scene_manager.has_method("process_scene") and selected_node != null:
+        node_data = scene_manager.process_scene(selected_node, include_properties,
                                                 include_signals, error_log,
                                                 include_project_settings,
                                                 enabled_setting_categories,

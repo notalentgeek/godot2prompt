@@ -17,13 +17,14 @@ var tree_selection_manager = null
 func initialize(parent_control: Control) -> void:
 	# Create the dialog if it doesn't exist
 	if dialog == null:
-		# Use AcceptDialog instead of ConfirmationDialog for more customization
-		dialog = AcceptDialog.new()
+		# Create a custom confirmation dialog with 3 buttons
+		dialog = ConfirmationDialog.new()
 		parent_control.add_child(dialog)
 
 		# Configure the dialog
 		dialog.title = "Scene to Prompt"
 		dialog.min_size = Vector2(500, 500) # Larger dialog size for categories
+		dialog.ok_button_text = "Export" # Rename the OK button
 
 		# Create main container with tabs
 		var main_tabs = TabContainer.new()
@@ -48,19 +49,17 @@ func initialize(parent_control: Control) -> void:
 		main_tabs.set_tab_title(1, "Options")
 
 		# Initialize progress dialog
-		# Fix: Load the script and create an instance properly
 		var progress_dialog_script = load("res://addons/godot2prompt/ui/components/export_progress_dialog.gd")
 		progress_dialog = progress_dialog_script.new()
 		progress_dialog.initialize(parent_control)
-		print("Progress dialog initialized")
 
-		# Setup dialog buttons
-		dialog.get_ok_button().text = "Export"
-		var cancel_button = dialog.add_cancel_button("Cancel")
+		# Add a custom button for copy to clipboard using dialog API
+		var copy_id = dialog.add_button("Copy to Clipboard", true, "copy_to_clipboard")
 
 		# Connect signals
 		dialog.connect("confirmed", Callable(self, "_on_export_confirmed"))
 		dialog.connect("canceled", Callable(self, "_on_canceled"))
+		dialog.connect("custom_action", Callable(self, "_on_custom_action"))
 
 func show_dialog(root_node: Node) -> void:
 	if dialog:
@@ -103,6 +102,115 @@ func _on_export_confirmed() -> void:
 			export_options.include_screenshot)
 
 	current_root = null
+
+func _on_custom_action(action_name: String) -> void:
+	if action_name == "copy_to_clipboard":
+		print("Copy to clipboard button pressed")
+		_handle_copy_to_clipboard()
+
+func _handle_copy_to_clipboard() -> void:
+	# Get options from the options tab manager
+	var export_options = options_tab_manager.get_export_options()
+
+	# Get enabled setting categories if project settings are included
+	var enabled_setting_categories = []
+	if export_options.include_project_settings:
+		enabled_setting_categories = options_tab_manager.get_enabled_setting_categories()
+
+	# Find the highest selected node in the hierarchy
+	var selected_node = tree_selection_manager.find_highest_selected_node()
+
+	if selected_node:
+		# Show a processing notification
+		var notification = AcceptDialog.new()
+		notification.title = "Copying to Clipboard"
+		notification.dialog_text = "Processing scene export for clipboard..."
+
+		# Make sure the notification is not exclusive to avoid conflicts
+		notification.exclusive = false
+
+		# Add to the editor and show
+		var parent_control = dialog.get_parent()
+		parent_control.add_child(notification)
+		notification.popup_centered()
+
+		# Get necessary components
+		var scene_manager = load("res://addons/godot2prompt/core/managers/scene_manager.gd").new()
+		var composite_exporter = load("res://addons/godot2prompt/core/exporters/composite_exporter.gd").new()
+
+		# Process the node with the selected options
+		var error_log = []
+		if export_options.include_errors:
+			var error_manager = load("res://addons/godot2prompt/core/managers/error_manager.gd").new()
+			error_log = error_manager.get_errors()
+
+		# Process the scene using the scene_manager
+		var node_data = scene_manager.process_scene(selected_node,
+			export_options.include_properties,
+			export_options.include_signals,
+			error_log,
+			export_options.include_project_settings,
+			enabled_setting_categories,
+			"" # No screenshot for clipboard export
+		)
+
+		# Add the appropriate exporters
+		var tree_exporter = load("res://addons/godot2prompt/core/exporters/tree_exporter.gd").new()
+		composite_exporter.add_exporter(tree_exporter)
+
+		if export_options.include_properties:
+			var properties_exporter = load("res://addons/godot2prompt/core/exporters/properties_exporter.gd").new()
+			composite_exporter.add_exporter(properties_exporter)
+
+		if export_options.include_signals:
+			var signal_exporter = load("res://addons/godot2prompt/core/exporters/signal_exporter.gd").new()
+			composite_exporter.add_exporter(signal_exporter)
+
+		if export_options.include_scripts:
+			var code_exporter = load("res://addons/godot2prompt/core/exporters/code_exporter.gd").new()
+			composite_exporter.add_exporter(code_exporter)
+
+		if export_options.include_errors:
+			var error_context_exporter = load("res://addons/godot2prompt/core/exporters/error_context_exporter.gd").new()
+			composite_exporter.add_exporter(error_context_exporter)
+
+		if export_options.include_project_settings and enabled_setting_categories.size() > 0:
+			var project_config_exporter = load("res://addons/godot2prompt/core/exporters/project_config_exporter.gd").new()
+			composite_exporter.add_exporter(project_config_exporter)
+
+		# Generate the output text
+		var output_text = composite_exporter.generate_output(node_data)
+
+		# Print debug output
+		print("Generated clipboard text length:", output_text.length())
+		print("First 100 characters of clipboard text:", output_text.substr(0, 100))
+
+		# Copy to clipboard using DisplayServer (Godot 4 method)
+		DisplayServer.clipboard_set(output_text)
+
+		# Update notification
+		notification.dialog_text = "Scene export copied to clipboard!"
+
+		# Clean up notification
+		notification.connect("confirmed", Callable(self, "_clean_up_notification").bind(notification))
+	else:
+		# Show error if no node selected
+		var error_dialog = AcceptDialog.new()
+		error_dialog.title = "No Node Selected"
+		error_dialog.dialog_text = "Please select a node in the scene tree first."
+		error_dialog.exclusive = false
+
+		# Add to the editor and show
+		var parent_control = dialog.get_parent()
+		parent_control.add_child(error_dialog)
+		error_dialog.popup_centered()
+
+		# Clean up notification
+		error_dialog.connect("confirmed", Callable(self, "_clean_up_notification").bind(error_dialog))
+
+func _clean_up_notification(notification):
+	if notification and is_instance_valid(notification):
+		notification.queue_free()
 
 func _on_canceled() -> void:
 	current_root = null
