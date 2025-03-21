@@ -10,7 +10,7 @@ const DEFAULT_EXPORT_PATH: String = "res://scene_hierarchy.txt"
 # Core components
 var _editor_interface: EditorInterface
 var _error_manager
-var _file_handler
+var _file_system
 var _scene_manager
 var _screenshot_manager
 var _ui_manager
@@ -25,14 +25,14 @@ var _export_timer: Timer
 func initialize(
 	editor_interface: EditorInterface,
 	error_manager,
-	file_handler,
+	file_system,
 	scene_manager,
 	screenshot_manager,
 	ui_manager
 ) -> void:
 	_editor_interface = editor_interface
 	_error_manager = error_manager
-	_file_handler = file_handler
+	_file_system = file_system
 	_scene_manager = scene_manager
 	_screenshot_manager = screenshot_manager
 	_ui_manager = ui_manager
@@ -138,7 +138,7 @@ func _run_quick_export(root: Node) -> void:
 	var output_text = exporter.generate_output(node_data)
 
 	await _update_progress_with_delay(90, "Saving to file...", 0.1)
-	_file_handler.save_to_file(DEFAULT_EXPORT_PATH, output_text)
+	_file_system.save_to_file(DEFAULT_EXPORT_PATH, output_text)
 
 	# Complete progress
 	_ui_manager.update_progress(100, "Export complete!")
@@ -269,7 +269,7 @@ func _process_export(
 	var output_text = exporter.generate_output(node_data)
 
 	await _update_progress_with_delay(90, "Saving to file...", 0.1)
-	_file_handler.save_to_file(DEFAULT_EXPORT_PATH, output_text)
+	_file_system.save_to_file(DEFAULT_EXPORT_PATH, output_text)
 
 	# Finalize export
 	_ui_manager.finalize_export()

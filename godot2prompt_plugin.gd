@@ -9,7 +9,7 @@ const QUICK_EXPORT_MENU_ITEM: String = "Quick Scene Export with Screenshot"
 const ERROR_MANAGER_PATH: String = "res://addons/godot2prompt/core/managers/error_manager.gd"
 const EXPORT_DIALOG_PATH: String = "res://addons/godot2prompt/ui/export_dialog.gd"
 const EXPORT_MANAGER_PATH: String = "res://addons/godot2prompt/core/managers/export_manager.gd"
-const FILE_HANDLER_PATH: String = "res://addons/godot2prompt/core/io/file_handler.gd"
+const FILE_SYSTEM_PATH: String = "res://addons/godot2prompt/core/io/file_system.gd"
 const SCENE_MANAGER_PATH: String = "res://addons/godot2prompt/core/managers/scene_manager.gd"
 const SCREENSHOT_MANAGER_PATH: String = "res://addons/godot2prompt/core/managers/screenshot_manager.gd"
 
@@ -20,7 +20,7 @@ const DEFAULT_EXPORT_PATH: String = "res://scene_hierarchy.txt"
 var _editor_interface: EditorInterface
 var _error_manager
 var _export_manager
-var _file_handler
+var _file_system
 var _scene_manager
 var _screenshot_manager
 var _ui_manager
@@ -47,7 +47,7 @@ func _exit_tree() -> void:
 func _initialize_managers() -> void:
 	_error_manager = load(ERROR_MANAGER_PATH).new()
 	_export_manager = load(EXPORT_MANAGER_PATH).new()
-	_file_handler = load(FILE_HANDLER_PATH).new()
+	_file_system = load(FILE_SYSTEM_PATH).new()
 	_scene_manager = load(SCENE_MANAGER_PATH).new()
 	_screenshot_manager = load(SCREENSHOT_MANAGER_PATH).new()
 	_ui_manager = load(EXPORT_DIALOG_PATH).new()
@@ -56,7 +56,7 @@ func _initialize_managers() -> void:
 	_export_manager.initialize(
 		_editor_interface,
 		_error_manager,
-		_file_handler,
+		_file_system,
 		_scene_manager,
 		_screenshot_manager,
 		_ui_manager
@@ -115,7 +115,7 @@ func _clean_up_references() -> void:
 	# No need to call queue_free on RefCounted objects
 	_error_manager = null
 	_export_manager = null
-	_file_handler = null
+	_file_system = null
 	_scene_manager = null
 	_screenshot_manager = null
 	_ui_manager = null

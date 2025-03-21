@@ -2,6 +2,15 @@
 extends RefCounted
 class_name NodeData
 
+# Properties - Export Context
+var enabled_setting_categories: Array
+var error_log: Array
+var project_settings: Array
+var screenshot_path: String
+
+# Properties - Hierarchy
+var children: Array
+
 # Properties - Node Identification
 var depth: int
 var name: String
@@ -11,15 +20,6 @@ var type: String
 var properties: Dictionary
 var script_code: String
 var signals: Array
-
-# Properties - Export Context
-var enabled_setting_categories: Array
-var error_log: Array
-var project_settings: Array
-var screenshot_path: String
-
-# Properties - Hierarchy
-var children: Array
 
 # Constructor
 func _init(
