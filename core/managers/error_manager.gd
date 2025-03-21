@@ -8,7 +8,7 @@ It maintains a limited history of errors and integrates with the log monitoring 
 """
 
 # Constants
-const LOG_MONITOR_PATH: String = "res://addons/godot2prompt/core/managers/error/log_monitor.gd"
+const LOG_MONITOR_PATH: String = "res://addons/godot2prompt/core/io/log_monitor.gd"
 const MAX_ERRORS: int = 10
 const PREFIX_LOG: String = "Godot2Prompt: Captured error: %s"
 

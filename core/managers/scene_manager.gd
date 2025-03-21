@@ -9,9 +9,9 @@ It traverses the scene tree, extracting node data that can be formatted by expor
 
 # Constants - Paths
 const NODE_DATA_PATH: String = "res://addons/godot2prompt/core/data/node_data.gd"
-const PROPERTIES_EXTRACTOR_PATH: String = "res://addons/godot2prompt/core/managers/scene/properties_extractor.gd"
-const SETTINGS_EXTRACTOR_PATH: String = "res://addons/godot2prompt/core/managers/scene/settings_extractor.gd"
-const SIGNALS_EXTRACTOR_PATH: String = "res://addons/godot2prompt/core/managers/scene/signals_extractor.gd"
+const PROPERTIES_EXTRACTOR_PATH: String = "res://addons/godot2prompt/core/extractors/properties_extractor.gd"
+const SETTINGS_EXTRACTOR_PATH: String = "res://addons/godot2prompt/core/extractors/settings_extractor.gd"
+const SIGNALS_EXTRACTOR_PATH: String = "res://addons/godot2prompt/core/extractors/signals_extractor.gd"
 
 # Components
 var _node_data_class
