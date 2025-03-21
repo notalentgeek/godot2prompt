@@ -1,10 +1,23 @@
 @tool
-extends "res://addons/godot2prompt/core/exporters/base_exporter.gd"
+extends BaseExporter
+class_name TreeExporter
 
-# Tree exporter - provides basic tree structure formatting
-# This is the base visualization format that other exporters may enhance
+"""
+TreeExporter provides the base tree structure formatting for a node hierarchy.
+It focuses solely on the hierarchical organization of nodes, serving as the
+foundation that other exporters can enhance with additional details.
+"""
 
-# For tree exporter, we don't need to add any content beyond the node line,
-# so we can leave format_node_content empty or override it to return an empty string
-func format_node_content(node_data) -> String:
+func format_node_content(node_data: NodeData) -> String:
+	"""
+	Formats additional content for a node.
+	For the TreeExporter, no additional content is needed beyond the basic node
+	identification line that is already handled by the BaseExporter.
+
+	Args:
+		node_data: The NodeData object to process
+
+	Returns:
+		An empty string as this exporter only handles basic tree structure
+	"""
 	return ""
