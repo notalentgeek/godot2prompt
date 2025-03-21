@@ -1,17 +1,56 @@
 @tool
-extends "res://addons/godot2prompt/core/exporters/base_exporter.gd"
+extends BaseExporter
+class_name CodeExporter
 
-# Code exporter - adds script code to the output
-# This includes the GDScript attached to nodes
+# Constants
+const CODE_BLOCK_END: String = "```"
+const CODE_BLOCK_START: String = "```gdscript"
+const CONTENT_INDENT: String = "  "
+const NEWLINE: String = "\n"
 
-# Format just the script content for a node
-func format_node_content(node_data) -> String:
-	var output = ""
-	var indent = get_indent(node_data.depth)
-	
-	# Add script code if available
-	if node_data.script_code and node_data.script_code.length() > 0:
-		var script_text = "```gdscript\n" + node_data.script_code + "\n```\n"
-		output += indent + "  " + script_text.replace("\n", "\n" + indent + "  ") + "\n"
-	
-	return output
+"""
+CodeExporter handles the formatting of script code attached to nodes.
+It specializes in properly formatting GDScript with appropriate markdown code blocks.
+"""
+
+func format_node_content(node_data: NodeData) -> String:
+	"""
+	Formats the script code for a node with proper indentation and markdown code blocks.
+
+	Args:
+		node_data: The NodeData object containing script code to format
+
+	Returns:
+		A formatted string containing the node's script code in a markdown code block,
+		or an empty string if the node has no script code
+	"""
+	# Return early if no script code is available
+	if not node_data.script_code or node_data.script_code.is_empty():
+		return ""
+
+	var base_indent = get_indent(node_data.depth)
+	var content_indent = base_indent + CONTENT_INDENT
+
+	# Format the script code as a markdown code block
+	var formatted_code = _format_script_as_code_block(node_data.script_code, content_indent)
+
+	return formatted_code + NEWLINE
+
+func _format_script_as_code_block(script_code: String, indent: String) -> String:
+	"""
+	Wraps script code in markdown code block syntax and applies indentation.
+
+	Args:
+		script_code: The raw script code to format
+		indent: The indentation string to apply to each line
+
+	Returns:
+		Script code formatted as an indented markdown code block
+	"""
+	# Create the code block wrapper
+	var code_block = CODE_BLOCK_START + NEWLINE
+	code_block += script_code + NEWLINE
+	code_block += CODE_BLOCK_END
+
+	# Apply indentation to each line
+	return indent + code_block.replace(NEWLINE, NEWLINE + indent)
