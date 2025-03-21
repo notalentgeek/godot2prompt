@@ -2,6 +2,12 @@
 extends RefCounted
 class_name NodeData
 
+"""
+NodeData represents a single node in the scene hierarchy with all its properties.
+This class stores the complete information about a node that can be exported,
+including its identification, content, hierarchy, and export context information.
+"""
+
 # Properties - Export Context
 var enabled_setting_categories: Array
 var error_log: Array
@@ -34,6 +40,21 @@ func _init(
 	p_enabled_setting_categories: Array = [],
 	p_screenshot_path: String = ""
 ):
+	"""
+	Initializes a new NodeData instance with the provided information.
+
+	Args:
+		p_name: The name of the node
+		p_class: The class/type of the node
+		p_depth: The depth level of the node in the hierarchy
+		p_script: The associated script code as a string
+		p_properties: Dictionary of the node's properties and their values
+		p_signals: Array of signal connections associated with the node
+		p_error_log: Array of error messages for context
+		p_project_settings: Array of project settings for context
+		p_enabled_setting_categories: Array of enabled setting categories
+		p_screenshot_path: Path to the screenshot image if available
+	"""
 	# Node Identification
 	depth = p_depth
 	name = p_name

@@ -1,11 +1,18 @@
 @tool
 extends RefCounted
+class_name ExportManager
 
-# Constants - Paths
-const COMPOSITE_EXPORTER_PATH: String = "res://addons/godot2prompt/core/exporters/composite_exporter.gd"
+"""
+ExportManager orchestrates the scene export process in the Godot2Prompt plugin.
+It coordinates between UI, export options, and various exporters to generate
+formatted output of scene hierarchies with their properties and related context.
+"""
 
 # Constants - File Paths
 const DEFAULT_EXPORT_PATH: String = "res://scene_hierarchy.txt"
+
+# Constants - Paths
+const COMPOSITE_EXPORTER_PATH: String = "res://addons/godot2prompt/core/exporters/composite_exporter.gd"
 
 # Core components
 var _editor_interface: EditorInterface
@@ -30,6 +37,17 @@ func initialize(
 	screenshot_manager,
 	ui_manager
 ) -> void:
+	"""
+	Initializes the ExportManager with all required dependencies.
+
+	Args:
+		editor_interface: Reference to the Godot editor interface
+		error_manager: Manager for handling errors
+		file_system: System for file operations
+		scene_manager: Manager for processing scene data
+		screenshot_manager: Manager for capturing screenshots
+		ui_manager: Manager for UI operations
+	"""
 	_editor_interface = editor_interface
 	_error_manager = error_manager
 	_file_system = file_system
@@ -41,10 +59,21 @@ func initialize(
 	_connect_signals()
 
 func set_timers(export_timer: Timer, completion_timer: Timer) -> void:
+	"""
+	Sets the timers used for controlling UI display duration.
+
+	Args:
+		export_timer: Timer for standard export operations
+		completion_timer: Timer for displaying completion messages
+	"""
 	_export_timer = export_timer
 	_completion_timer = completion_timer
 
 func _initialize_exporters() -> void:
+	"""
+	Loads and instantiates all exporters used in the export process.
+	Exporters are stored in a dictionary for easy access by type.
+	"""
 	# Load and instantiate exporters alphabetically
 	_exporters = {
 		"code": load("res://addons/godot2prompt/core/exporters/code_exporter.gd").new(),
@@ -57,16 +86,33 @@ func _initialize_exporters() -> void:
 	}
 
 func _connect_signals() -> void:
+	"""
+	Connects signal handlers for UI events.
+	"""
 	if not _ui_manager.is_connected("export_hierarchy", Callable(self, "_on_export_hierarchy")):
 		_ui_manager.connect("export_hierarchy", Callable(self, "_on_export_hierarchy"))
 
 # UI Methods
+
 func show_export_dialog(root_node: Node) -> void:
+	"""
+	Displays the export dialog for the given root node.
+
+	Args:
+		root_node: The scene root node to export
+	"""
 	# Initialize the dialog with the root node
 	_ui_manager.initialize(_editor_interface.get_base_control())
 	_ui_manager.show_dialog(root_node)
 
 func show_error_dialog(title: String, message: String) -> void:
+	"""
+	Displays an error dialog with the given title and message.
+
+	Args:
+		title: The dialog title
+		message: The error message to display
+	"""
 	var error_dialog = AcceptDialog.new()
 	error_dialog.title = title
 	error_dialog.dialog_text = message
@@ -79,6 +125,13 @@ func show_error_dialog(title: String, message: String) -> void:
 	error_dialog.connect("canceled", Callable(self, "_on_dialog_closed").bind(error_dialog))
 
 func show_notification_dialog(title: String, message: String) -> void:
+	"""
+	Displays a notification dialog with the given title and message.
+
+	Args:
+		title: The dialog title
+		message: The notification message to display
+	"""
 	var notification = AcceptDialog.new()
 	notification.title = title
 	notification.dialog_text = message
@@ -90,7 +143,14 @@ func show_notification_dialog(title: String, message: String) -> void:
 	notification.connect("confirmed", Callable(self, "_on_dialog_closed").bind(notification))
 
 # Export Processing
+
 func execute_quick_export(root: Node) -> void:
+	"""
+	Executes a quick export with default settings for the given root node.
+
+	Args:
+		root: The scene root node to export
+	"""
 	# Initialize the dialog for quick export (to setup progress dialog)
 	_ui_manager.initialize(_editor_interface.get_base_control())
 	_ui_manager.show_progress()
@@ -99,6 +159,12 @@ func execute_quick_export(root: Node) -> void:
 	_run_quick_export(root)
 
 func _run_quick_export(root: Node) -> void:
+	"""
+	Executes the quick export process with predefined options.
+
+	Args:
+		root: The scene root node to export
+	"""
 	# Small delay to ensure the progress dialog is visible
 	await _update_progress_with_delay(10, "Initializing quick export...", 0.1)
 
@@ -138,7 +204,7 @@ func _run_quick_export(root: Node) -> void:
 	var output_text = exporter.generate_output(node_data)
 
 	await _update_progress_with_delay(90, "Saving to file...", 0.1)
-	_file_system.save_to_file(DEFAULT_EXPORT_PATH, output_text)
+	_file_system.save_content(DEFAULT_EXPORT_PATH, output_text)
 
 	# Complete progress
 	_ui_manager.update_progress(100, "Export complete!")
@@ -152,6 +218,7 @@ func _run_quick_export(root: Node) -> void:
 	show_notification_dialog("Export Complete", completion_message)
 
 # Export signal handler
+
 func _on_export_hierarchy(
 	selected_node: Node,
 	include_scripts: bool,
@@ -162,6 +229,19 @@ func _on_export_hierarchy(
 	enabled_setting_categories: Array = [],
 	include_screenshot: bool = false
 ) -> void:
+	"""
+	Handles the export_hierarchy signal from the UI.
+
+	Args:
+		selected_node: The node to export
+		include_scripts: Whether to include scripts in the export
+		include_properties: Whether to include properties in the export
+		include_signals: Whether to include signals in the export
+		include_errors: Whether to include errors in the export
+		include_project_settings: Whether to include project settings
+		enabled_setting_categories: Array of enabled setting categories
+		include_screenshot: Whether to include a screenshot
+	"""
 	# Show progress immediately
 	_ui_manager.show_progress()
 
@@ -198,6 +278,18 @@ func _process_export_with_screenshot(
 	include_project_settings: bool,
 	enabled_setting_categories: Array
 ) -> void:
+	"""
+	Processes an export that includes a screenshot.
+
+	Args:
+		selected_node: The node to export
+		include_scripts: Whether to include scripts in the export
+		include_properties: Whether to include properties in the export
+		include_signals: Whether to include signals in the export
+		include_errors: Whether to include errors in the export
+		include_project_settings: Whether to include project settings
+		enabled_setting_categories: Array of enabled setting categories
+	"""
 	var screenshot_path = _screenshot_manager.capture_editor_screenshot(_editor_interface)
 
 	_process_export(
@@ -221,6 +313,19 @@ func _process_export(
 	enabled_setting_categories: Array,
 	screenshot_path: String = ""
 ) -> void:
+	"""
+	Processes a scene export with the given options.
+
+	Args:
+		selected_node: The node to export
+		include_scripts: Whether to include scripts in the export
+		include_properties: Whether to include properties in the export
+		include_signals: Whether to include signals in the export
+		include_errors: Whether to include errors in the export
+		include_project_settings: Whether to include project settings
+		enabled_setting_categories: Array of enabled setting categories
+		screenshot_path: Path to the screenshot, if included
+	"""
 	# Collect error logs if needed
 	var error_log = []
 	if include_errors:
@@ -269,7 +374,7 @@ func _process_export(
 	var output_text = exporter.generate_output(node_data)
 
 	await _update_progress_with_delay(90, "Saving to file...", 0.1)
-	_file_system.save_to_file(DEFAULT_EXPORT_PATH, output_text)
+	_file_system.save_content(DEFAULT_EXPORT_PATH, output_text)
 
 	# Finalize export
 	_ui_manager.finalize_export()
@@ -283,6 +388,10 @@ func _process_export(
 	show_notification_dialog("Export Complete", completion_message)
 
 func _handle_export_failure() -> void:
+	"""
+	Handles the case where export processing fails.
+	Displays an error message and cleans up the UI.
+	"""
 	_ui_manager.update_progress(100, "Export failed - could not process scene")
 	_ui_manager.finalize_export()
 	_completion_timer.start()
@@ -290,7 +399,17 @@ func _handle_export_failure() -> void:
 	show_error_dialog("Export Error", "Failed to process scene data for export.")
 
 # Helper methods
+
 func _create_configured_exporter(options: Dictionary) -> Object:
+	"""
+	Creates and configures a composite exporter based on the provided options.
+
+	Args:
+		options: Dictionary of export options
+
+	Returns:
+		A configured CompositeExporter instance
+	"""
 	var exporter = load(COMPOSITE_EXPORTER_PATH).new()
 
 	# The tree exporter is always included for the base structure
@@ -301,7 +420,7 @@ func _create_configured_exporter(options: Dictionary) -> Object:
 		exporter.add_exporter(_exporters.properties)
 
 	if options.include_signals and _exporters.signal:
-		exporter.add_exporter(_exporters.signal )
+		exporter.add_exporter(_exporters.signal)
 
 	if options.include_scripts and _exporters.code:
 		exporter.add_exporter(_exporters.code)
@@ -318,6 +437,14 @@ func _create_configured_exporter(options: Dictionary) -> Object:
 	return exporter
 
 func _update_progress_with_delay(progress: int, message: String, delay: float) -> void:
+	"""
+	Updates the progress dialog and waits for the specified delay.
+
+	Args:
+		progress: The progress percentage (0-100)
+		message: The status message to display
+		delay: The delay in seconds to wait after updating
+	"""
 	_ui_manager.update_progress(progress, message)
 
 	# Create and use a timer since RefCounted doesn't have get_tree()
@@ -334,5 +461,11 @@ func _update_progress_with_delay(progress: int, message: String, delay: float) -
 	timer.queue_free()
 
 func _on_dialog_closed(dialog) -> void:
+	"""
+	Handles cleanup when a dialog is closed.
+
+	Args:
+		dialog: The dialog that was closed
+	"""
 	if dialog and is_instance_valid(dialog):
 		dialog.queue_free()

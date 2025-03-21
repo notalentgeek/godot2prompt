@@ -1,52 +1,87 @@
 @tool
 extends RefCounted
+class_name ErrorManager
 
-# Maximum number of errors to store
-const MAX_ERRORS = 10
+"""
+ErrorManager handles error tracking and logging for the Godot2Prompt plugin.
+It maintains a limited history of errors and integrates with the log monitoring system.
+"""
 
-# Error log storage
-var error_log = []
+# Constants
+const LOG_MONITOR_PATH: String = "res://addons/godot2prompt/core/managers/error/log_monitor.gd"
+const MAX_ERRORS: int = 10
+const PREFIX_LOG: String = "Godot2Prompt: Captured error: %s"
 
-# Components
+# Properties
+var _error_log: Array = []
 var log_monitor = null
 
-func _init():
-	# Initialize the log monitor
-	log_monitor = load("res://addons/godot2prompt/core/managers/error/log_monitor.gd").new()
+func _init() -> void:
+	"""
+	Initializes the ErrorManager and creates the log monitor.
+	"""
+	log_monitor = load(LOG_MONITOR_PATH).new()
 
-# Start monitoring for errors
-func start_monitoring() -> void:
-	log_monitor.start_monitoring(self)
+# Public Methods
 
-# Stop monitoring for errors
-func stop_monitoring() -> void:
-	log_monitor.stop_monitoring()
-
-# Add an error to the log
 func add_error(message: String) -> void:
-	# Check if this error is already logged (avoid duplicates)
-	if error_log.has(message):
+	"""
+	Adds an error message to the log if it's not already present.
+
+	Args:
+		message: The error message to add
+	"""
+	# Skip duplicate errors
+	if _error_log.has(message):
 		return
 
 	# Add the error
-	error_log.append(message)
+	_error_log.append(message)
 
-	# Keep only the most recent errors
-	if error_log.size() > MAX_ERRORS:
-		error_log.pop_front()
+	# Maintain maximum size by removing oldest errors
+	if _error_log.size() > MAX_ERRORS:
+		_error_log.pop_front()
 
-	print("Godot2Prompt: Captured error: " + message)
+	print(PREFIX_LOG % message)
 
-# Clear the error log
 func clear_errors() -> void:
-	error_log.clear()
+	"""
+	Removes all errors from the log.
+	"""
+	_error_log.clear()
 
-# Get the current error log
 func get_errors() -> Array:
-	return error_log.duplicate()
+	"""
+	Returns a copy of the current error log.
 
-# Clean up
+	Returns:
+		An array of error message strings
+	"""
+	return _error_log.duplicate()
+
+func start_monitoring() -> void:
+	"""
+	Begins monitoring for errors using the log monitor.
+	"""
+	if log_monitor:
+		log_monitor.start_monitoring(self)
+
+func stop_monitoring() -> void:
+	"""
+	Stops monitoring for errors.
+	"""
+	if log_monitor:
+		log_monitor.stop_monitoring()
+
+# Cleanup
+
 func _notification(what: int) -> void:
+	"""
+	Handles object cleanup when being deleted.
+
+	Args:
+		what: The notification type
+	"""
 	if what == NOTIFICATION_PREDELETE:
 		if log_monitor:
 			log_monitor = null
