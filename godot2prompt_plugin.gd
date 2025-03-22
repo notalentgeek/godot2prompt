@@ -190,8 +190,8 @@ func quick_export_with_screenshot() -> void:
 # Timer signal handlers
 func _on_export_timer_timeout() -> void:
 	if _export_dialog_controller:
-		_export_dialog_controller.hide_progress_dialog()
+		_export_dialog_controller.hide_progress()
 
 func _on_completion_timer_timeout() -> void:
 	if _export_dialog_controller:
-		_export_dialog_controller.hide_progress_dialog()
+		_export_dialog_controller.hide_progress()
