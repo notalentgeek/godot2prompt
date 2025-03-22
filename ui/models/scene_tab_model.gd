@@ -1,5 +1,5 @@
 @tool
-extends RefCounted
+extends BaseModel
 class_name SceneTabModel
 
 """
@@ -7,7 +7,7 @@ SceneTabModel represents the data model for the scene tab.
 It manages scene selection state and data.
 """
 
-# Signals
+# Specific signals
 signal scene_changed()
 
 # The state maintained by this model is minimal as most of the
@@ -18,4 +18,11 @@ func _init():
 	"""
 	Initialize the scene tab model.
 	"""
-	pass
+	super._init()
+
+func notify_scene_changed() -> void:
+	"""
+	Notify observers that the scene has changed.
+	"""
+	emit_signal("scene_changed")
+	notify_changed()  # Notify BaseModel observers

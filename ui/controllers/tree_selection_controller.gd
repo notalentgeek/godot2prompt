@@ -1,5 +1,5 @@
 @tool
-extends RefCounted
+extends BaseController
 class_name TreeSelectionController
 
 """
@@ -7,14 +7,11 @@ TreeSelectionController coordinates between the tree selection model and view.
 It manages the tree selection logic and updates the model based on user interactions.
 """
 
-# Model and view references
-var _model: TreeSelectionModel
-var _view: TreeSelectionView
-
 func _init():
 	"""
 	Initialize the controller by creating model and view instances.
 	"""
+	super._init()
 	_model = TreeSelectionModel.new()
 	_view = TreeSelectionView.new(self)
 

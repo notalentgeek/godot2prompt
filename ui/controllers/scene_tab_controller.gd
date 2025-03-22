@@ -1,5 +1,5 @@
 @tool
-extends RefCounted
+extends BaseController
 class_name SceneTabController
 
 """
@@ -7,14 +7,11 @@ SceneTabController coordinates between the scene tab model and view.
 It handles user interactions with the scene hierarchy.
 """
 
-# Model and view references
-var _model: SceneTabModel
-var _view: SceneTabView
-
 func _init():
 	"""
 	Initialize the controller by creating model and view instances.
 	"""
+	super._init()
 	_model = SceneTabModel.new()
 	_view = SceneTabView.new(self)
 

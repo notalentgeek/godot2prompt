@@ -1,5 +1,5 @@
 @tool
-extends RefCounted
+extends BaseController
 class_name OptionsTabController
 
 """
@@ -7,14 +7,11 @@ OptionsTabController coordinates between the options tab model and view.
 It handles user interactions and forwards data between the model and view.
 """
 
-# Model and view references
-var _model: OptionsTabModel
-var _view: OptionsTabView
-
 func _init():
 	"""
 	Initialize the controller by creating model and view instances.
 	"""
+	super._init()
 	_model = OptionsTabModel.new()
 	_view = OptionsTabView.new(self)
 

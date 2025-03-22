@@ -1,4 +1,3 @@
-s
 @tool
 extends RefCounted
 class_name OptionsTabView

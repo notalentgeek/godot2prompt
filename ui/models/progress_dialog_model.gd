@@ -1,5 +1,5 @@
 @tool
-extends RefCounted
+extends BaseModel
 class_name ProgressDialogModel
 
 """
@@ -7,7 +7,7 @@ ProgressDialogModel represents the data model for the export progress dialog.
 It manages the progress state and messages.
 """
 
-# Signals
+# Specific signals
 signal progress_updated(progress, message)
 
 # Constants
@@ -21,6 +21,7 @@ func _init():
 	"""
 	Initialize the progress dialog model with default values.
 	"""
+	super._init()
 	reset()
 
 func reset() -> void:
@@ -30,6 +31,7 @@ func reset() -> void:
 	_current_progress = 0
 	_current_message = INITIAL_MESSAGE
 	emit_signal("progress_updated", _current_progress, _current_message)
+	notify_changed() # Notify BaseModel observers
 
 func update_progress(progress: int, message: String) -> void:
 	"""
@@ -54,6 +56,7 @@ func update_progress(progress: int, message: String) -> void:
 	# Notify listeners of changes
 	if should_emit:
 		emit_signal("progress_updated", _current_progress, _current_message)
+		notify_changed() # Notify BaseModel observers
 
 func get_progress() -> int:
 	"""

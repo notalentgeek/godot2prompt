@@ -1,5 +1,5 @@
 @tool
-extends RefCounted
+extends BaseModel
 class_name BaseOptionModel
 
 """
@@ -16,7 +16,7 @@ var default_state: bool = false
 # Current state
 var _is_enabled: bool = false
 
-# Signal for state changes
+# Option-specific signal
 signal state_changed(is_enabled)
 
 func _init(text: String = "", tooltip: String = "", default: bool = false):
@@ -28,6 +28,7 @@ func _init(text: String = "", tooltip: String = "", default: bool = false):
 		tooltip: The tooltip text for the option
 		default: The default state of the option
 	"""
+	super._init()
 	option_text = text if text else option_text
 	option_tooltip = tooltip if tooltip else option_tooltip
 	default_state = default
@@ -70,6 +71,7 @@ func set_enabled(enabled: bool) -> void:
 	if _is_enabled != enabled:
 		_is_enabled = enabled
 		emit_signal("state_changed", _is_enabled)
+		notify_changed() # Notify BaseModel observers
 
 func reset_to_default() -> void:
 	"""

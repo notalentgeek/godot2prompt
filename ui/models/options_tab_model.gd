@@ -1,5 +1,5 @@
 @tool
-extends RefCounted
+extends BaseModel
 class_name OptionsTabModel
 
 """
@@ -7,7 +7,7 @@ OptionsTabModel represents the data model for the options tab.
 It manages the collection of option models and their states.
 """
 
-# Signals
+# Specific signals
 signal options_changed()
 
 # Constants - Option Models Paths
@@ -27,6 +27,7 @@ func _init():
 	"""
 	Initialize the options tab model by creating all option models.
 	"""
+	super._init()
 	_initialize_option_models()
 
 func _initialize_option_models() -> void:
@@ -101,3 +102,4 @@ func _on_option_state_changed(_is_enabled: bool) -> void:
 		_is_enabled: The new state (not used here, just relaying the signal)
 	"""
 	emit_signal("options_changed")
+	notify_changed()  # Notify BaseModel observers

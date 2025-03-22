@@ -1,5 +1,5 @@
 @tool
-extends RefCounted
+extends BaseModel
 class_name TreeSelectionModel
 
 """
@@ -8,12 +8,18 @@ It maintains the mapping between tree items and scene nodes and tracks
 the selection state.
 """
 
-# Signals
+# Specific signals
 signal selection_changed()
 
 # Tree state
 var _current_root: Node = null
 var _node_items = {} # Dictionary to map Nodes to TreeItems
+
+func _init():
+	"""
+	Initialize the tree selection model.
+	"""
+	super._init()
 
 func set_current_root(root_node: Node) -> void:
 	"""
@@ -25,6 +31,7 @@ func set_current_root(root_node: Node) -> void:
 	_current_root = root_node
 	_node_items.clear()
 	emit_signal("selection_changed")
+	notify_changed()  # Notify BaseModel observers
 
 func get_current_root() -> Node:
 	"""
@@ -50,6 +57,7 @@ func clear_items() -> void:
 	Clear all node-item mappings.
 	"""
 	_node_items.clear()
+	notify_changed()  # Notify BaseModel observers
 
 func get_node_items() -> Dictionary:
 	"""
@@ -101,3 +109,10 @@ func _find_highest_selected_in_children(item, is_selected_func: Callable) -> Nod
 		child = child.get_next()
 
 	return null
+
+func notify_selection_changed() -> void:
+	"""
+	Notify observers that the selection has changed.
+	"""
+	emit_signal("selection_changed")
+	notify_changed()  # Notify BaseModel observers

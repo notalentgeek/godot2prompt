@@ -105,10 +105,11 @@ func load_categories() -> void:
 	# Store the categories and set default states
 	_categories = categories
 	for category in _categories:
-		_category_states[category] = true # All enabled by default
+		_category_states[category] = true  # All enabled by default
 
 	# Notify listeners that categories have been updated
 	emit_signal("categories_updated")
+	notify_changed()  # Notify BaseModel observers
 
 func get_categories() -> Array:
 	"""
@@ -139,8 +140,9 @@ func set_category_state(category: String, enabled: bool) -> void:
 		category: The category name
 		enabled: The new state
 	"""
-	if category in _categories:
+	if category in _categories and _category_states[category] != enabled:
 		_category_states[category] = enabled
+		notify_changed()  # Notify BaseModel observers
 
 func get_enabled_categories() -> Array:
 	"""

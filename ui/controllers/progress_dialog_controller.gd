@@ -1,5 +1,5 @@
 @tool
-extends RefCounted
+extends BaseController
 class_name ProgressDialogController
 
 """
@@ -7,14 +7,11 @@ ProgressDialogController coordinates between the progress dialog model and view.
 It handles the logic for updating progress and managing the dialog.
 """
 
-# Model and view references
-var _model: ProgressDialogModel
-var _view: ProgressDialogView
-
 func _init():
 	"""
 	Initialize the controller by creating model and view instances.
 	"""
+	super._init()
 	_model = ProgressDialogModel.new()
 	_view = ProgressDialogView.new(self)
 
@@ -54,12 +51,3 @@ func reset_progress() -> void:
 	Reset the progress to initial state.
 	"""
 	_model.reset()
-
-func get_model() -> ProgressDialogModel:
-	"""
-	Get the progress dialog model.
-
-	Returns:
-		The ProgressDialogModel instance
-	"""
-	return _model
