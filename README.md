@@ -241,7 +241,7 @@ I'm developing a new exporter for the Godot2Prompt plugin. I want to export [spe
 from Godot nodes and format it as [desired format].
 
 Here's the base exporter class structure:
-```gdscript
+'''gdscript
 @tool
 extends "res://addons/godot2prompt/core/exporters/base_exporter.gd"
 
@@ -252,7 +252,7 @@ func _init():
 
 func export_data(node_data):
     return ""
-```
+'''
 
 Can you help me implement the export_data method to process and format [specific data type]?
 ```
@@ -327,7 +327,7 @@ I'm developing a new extractor for the Godot2Prompt plugin. I need to extract [s
 from Godot nodes.
 
 Here's the basic structure I'm working with:
-```gdscript
+'''gdscript
 @tool
 extends RefCounted
 
@@ -339,7 +339,7 @@ func extract_from_node(node: Node) -> Dictionary:
     # Extraction logic here
 
     return result
-```
+'''
 
 How can I implement the extraction logic to gather [specific information] from different node types?
 ```
