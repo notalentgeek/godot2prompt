@@ -12,6 +12,9 @@ const EXPORT_DIALOG_MODEL_PATH: String = "res://addons/godot2prompt/ui/models/ex
 const EXPORT_DIALOG_VIEW_PATH: String = "res://addons/godot2prompt/ui/views/export_dialog_view.gd"
 const PROGRESS_DIALOG_CONTROLLER_PATH: String = "res://addons/godot2prompt/ui/controllers/progress_dialog_controller.gd"
 
+# Constants - Settings
+const MAX_CLIPBOARD_LINES: int = 1000 # Maximum number of lines for clipboard copy
+
 # Properties
 var _options_tab_controller = null
 var _progress_dialog_controller = null
@@ -144,6 +147,7 @@ func _on_custom_action(action_name: String) -> void:
 func _handle_copy_to_clipboard() -> void:
     """
     Handle copying the export data to clipboard.
+    Checks if the content is too large and warns the user if it exceeds the threshold.
     """
     # Get options from the options tab
     var export_options = _options_tab_controller.get_export_options()
@@ -163,11 +167,22 @@ func _handle_copy_to_clipboard() -> void:
         # Process the export
         var output_text = _model.process_export_to_clipboard(export_data)
 
-        # Copy to clipboard
-        DisplayServer.clipboard_set(output_text)
+        # Count the number of lines
+        var line_count = output_text.split("\n").size()
 
-        # Update notification
-        notification.dialog_text = "Scene export copied to clipboard!"
+        # Check if content is too large
+        if line_count > MAX_CLIPBOARD_LINES:
+            # Clean up the processing notification
+            _clean_up_notification(notification)
+
+            # Show warning dialog
+            _view.show_clipboard_size_warning(line_count, MAX_CLIPBOARD_LINES)
+        else:
+            # Copy to clipboard
+            DisplayServer.clipboard_set(output_text)
+
+            # Update notification
+            notification.dialog_text = "Scene export copied to clipboard!"
     else:
         _view.show_error_dialog("No Node Selected", "Please select a node in the scene tree first.")
 

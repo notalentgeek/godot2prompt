@@ -160,6 +160,25 @@ func show_clipboard_notification(message: String) -> AcceptDialog:
 
 	return notification
 
+func show_clipboard_size_warning(line_count: int, max_lines: int) -> void:
+	"""
+	Show a warning dialog when content is too large for clipboard.
+
+	Args:
+		line_count: The number of lines in the export
+		max_lines: The maximum number of lines allowed for clipboard
+	"""
+	var warning_dialog = AcceptDialog.new()
+	warning_dialog.title = "Content Too Large"
+	warning_dialog.dialog_text = "The selected content contains " + str(line_count) + " lines, which exceeds the maximum of " + str(max_lines) + " lines for clipboard operations.\n\nPlease use the 'Export' button instead to save the content to a file."
+	warning_dialog.exclusive = true
+	warning_dialog.min_size = Vector2(400, 150)
+
+	_parent_control.add_child(warning_dialog)
+	warning_dialog.popup_centered()
+
+	warning_dialog.connect("confirmed", Callable(_controller, "_clean_up_notification").bind(warning_dialog))
+
 func show_error_dialog(title: String, message: String) -> void:
 	"""
 	Show an error dialog.
