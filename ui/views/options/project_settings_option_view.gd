@@ -18,35 +18,40 @@ var settings_categories_container: VBoxContainer = null
 var project_settings_model: ProjectSettingsOptionModel:
 	get: return model as ProjectSettingsOptionModel
 
-func _init():
+func _init(settings_model):
 	"""
-	Initialize with a new project settings option model.
+	Initialize with the provided model.
+
+	Args:
+		settings_model: The ProjectSettingsOptionModel to use
 	"""
-	super._init(ProjectSettingsOptionModel.new())
+	super._init(settings_model)
 
 	# Connect to model signals
 	project_settings_model.categories_updated.connect(_on_categories_updated)
 
-func _setup_control() -> void:
+	# Create containers
+	_create_categories_container()
+
+func _create_categories_container() -> void:
 	"""
-	Setup the UI controls for the project settings option.
+	Create the container for project settings categories.
 	"""
 	# Create categories container
 	categories_container = VBoxContainer.new()
 	categories_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	categories_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
-	# Create categories label (initially hidden)
+	# Create categories label
 	categories_label = Label.new()
 	categories_label.text = "Project Settings Categories:"
-	categories_label.visible = project_settings_model.is_enabled()
 	categories_container.add_child(categories_label)
 
-	# Create scrollable container for categories (initially hidden)
+	# Create scrollable container for categories
 	categories_scroll = ScrollContainer.new()
 	categories_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	categories_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	categories_scroll.visible = project_settings_model.is_enabled()
+	categories_scroll.custom_minimum_size = Vector2(0, 200) # Give it some minimum height
 	categories_container.add_child(categories_scroll)
 
 	# Create the container for the checkboxes
@@ -54,8 +59,15 @@ func _setup_control() -> void:
 	settings_categories_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	categories_scroll.add_child(settings_categories_container)
 
+func _setup_control() -> void:
+	"""
+	Setup the UI controls for the project settings option.
+	"""
 	# Connect checkbox toggled signal
 	checkbox.toggled.connect(_on_project_settings_toggled)
+
+	# Set initial visibility based on model state
+	_update_categories_visibility(project_settings_model.is_enabled())
 
 func get_categories_container() -> Control:
 	"""
@@ -82,14 +94,34 @@ func _on_project_settings_toggled(button_pressed: bool) -> void:
 	Args:
 		button_pressed: The new state of the checkbox
 	"""
-	# Show/hide the categories section based on checkbox state
-	categories_label.visible = button_pressed
-	categories_scroll.visible = button_pressed
+	# Update categories visibility
+	_update_categories_visibility(button_pressed)
+
+	# If toggling on and no categories loaded, load them now
+	if button_pressed and project_settings_model._categories.is_empty():
+		project_settings_model.load_categories()
+
+func _update_categories_visibility(visible: bool) -> void:
+	"""
+	Update the visibility of category components.
+
+	Args:
+		visible: Whether the components should be visible
+	"""
+	if categories_label and categories_scroll:
+		categories_label.visible = visible
+		categories_scroll.visible = visible
+
+		# Force layout update
+		categories_container.visible = visible
+		categories_container.queue_redraw()
 
 func _on_categories_updated() -> void:
 	"""
 	Update the UI when categories are loaded or changed.
 	"""
+	print("Godot2Prompt: Updating categories UI")
+
 	# Clear existing categories
 	for child in settings_categories_container.get_children():
 		child.queue_free()
@@ -98,6 +130,9 @@ func _on_categories_updated() -> void:
 
 	# Get categories from the model
 	var categories = project_settings_model.get_categories()
+
+	# Debug info
+	print("Godot2Prompt: Categories count: ", categories.size())
 
 	# Create a checkbox for each category
 	for category in categories:
@@ -112,6 +147,13 @@ func _on_categories_updated() -> void:
 
 		# Store reference to checkbox
 		category_checkboxes[category] = checkbox
+
+	# Make sure categories are visible if enabled
+	_update_categories_visibility(project_settings_model.is_enabled())
+
+	# Force redraw to ensure UI updates
+	if categories_container:
+		categories_container.queue_redraw()
 
 func _on_category_toggled(enabled: bool, category: String) -> void:
 	"""
@@ -134,6 +176,10 @@ func _on_model_state_changed(is_enabled: bool) -> void:
 	super._on_model_state_changed(is_enabled)
 
 	# Update categories visibility
-	if categories_label and categories_scroll:
-		categories_label.visible = is_enabled
-		categories_scroll.visible = is_enabled
+	_update_categories_visibility(is_enabled)
+
+func load_categories() -> void:
+	"""
+	Load categories from the model.
+	"""
+	project_settings_model.load_categories()

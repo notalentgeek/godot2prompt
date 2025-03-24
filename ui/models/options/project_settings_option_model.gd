@@ -87,7 +87,8 @@ func format_category_name(category: String) -> String:
 	# Otherwise capitalize the first letter of each word
 	var words = category.split("_")
 	for i in range(words.size()):
-		words[i] = words[i].capitalize()
+		if words[i].length() > 0: # Avoid index errors on empty strings
+			words[i] = words[i].capitalize()
 
 	return " ".join(words)
 
@@ -95,6 +96,8 @@ func load_categories() -> void:
 	"""
 	Load available project setting categories.
 	"""
+	print("Godot2Prompt: Loading project settings categories")
+
 	# Clear existing categories
 	_categories.clear()
 	_category_states.clear()
@@ -105,11 +108,13 @@ func load_categories() -> void:
 	# Store the categories and set default states
 	_categories = categories
 	for category in _categories:
-		_category_states[category] = true  # All enabled by default
+		_category_states[category] = true # All enabled by default
+
+	print("Godot2Prompt: Loaded " + str(_categories.size()) + " categories")
 
 	# Notify listeners that categories have been updated
 	emit_signal("categories_updated")
-	notify_changed()  # Notify BaseModel observers
+	notify_changed() # Notify BaseModel observers
 
 func get_categories() -> Array:
 	"""
@@ -118,6 +123,9 @@ func get_categories() -> Array:
 	Returns:
 		Array of category names
 	"""
+	if _categories.is_empty():
+		load_categories()
+
 	return _categories.duplicate()
 
 func get_category_state(category: String) -> bool:
@@ -142,7 +150,7 @@ func set_category_state(category: String, enabled: bool) -> void:
 	"""
 	if category in _categories and _category_states[category] != enabled:
 		_category_states[category] = enabled
-		notify_changed()  # Notify BaseModel observers
+		notify_changed() # Notify BaseModel observers
 
 func get_enabled_categories() -> Array:
 	"""
@@ -169,18 +177,36 @@ func _get_categories_from_exporter() -> Array:
 	print("Godot2Prompt: Attempting to load project_config_exporter.gd")
 
 	# Try to load the project settings exporter
-	var project_config_exporter_script = load(PROJECT_CONFIG_EXPORTER_PATH)
-	if project_config_exporter_script:
-		# Create an instance of the exporter
-		var project_config_exporter = project_config_exporter_script.new()
+	var ProjectConfigExporter = load(PROJECT_CONFIG_EXPORTER_PATH)
+	if ProjectConfigExporter:
+		print("Godot2Prompt: Successfully loaded exporter class")
 
-		# Get available categories using the instance method
-		var categories = project_config_exporter.get_setting_categories()
-		print("Godot2Prompt: Found project settings categories: ", categories)
+		# Try to access the static method directly
+		if ProjectConfigExporter.has_method("get_setting_categories"):
+			var categories = ProjectConfigExporter.get_setting_categories()
+			print("Godot2Prompt: Found " + str(categories.size()) + " project settings categories")
 
-		# If categories were found, return them
-		if categories.size() > 0:
-			return categories
+			# If categories were found, return them
+			if categories.size() > 0:
+				return categories
+		else:
+			# Create an instance and try to call the method
+			print("Godot2Prompt: Creating exporter instance")
+			var exporter_instance = ProjectConfigExporter.new()
+
+			if exporter_instance.has_method("get_setting_categories"):
+				var categories = exporter_instance.get_setting_categories()
+				print("Godot2Prompt: Found " + str(categories.size()) + " project settings categories via instance")
+
+				# Clean up the instance
+				exporter_instance.free()
+
+				# If categories were found, return them
+				if categories.size() > 0:
+					return categories
+			else:
+				print("Godot2Prompt: Method not found in instance")
+				exporter_instance.free()
 	else:
 		print("Godot2Prompt: Failed to load project_config_exporter.gd")
 
@@ -195,5 +221,7 @@ func _on_state_changed(is_enabled: bool) -> void:
 	Args:
 		is_enabled: The new state of the option
 	"""
+	print("Godot2Prompt: Project settings option state changed to: " + str(is_enabled))
+
 	if is_enabled and _categories.is_empty():
 		load_categories()
