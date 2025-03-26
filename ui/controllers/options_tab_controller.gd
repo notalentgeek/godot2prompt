@@ -156,6 +156,8 @@ func get_export_options() -> Dictionary:
 
     if _screenshot_option_view and _screenshot_option_view.has_method("is_enabled"):
         options["include_screenshot"] = _screenshot_option_view.is_enabled()
+        # Debug print
+        print("Godot2Prompt: Screenshot option from view: " + str(_screenshot_option_view.is_enabled()))
 
     if _scripts_option_view and _scripts_option_view.has_method("is_enabled"):
         options["include_scripts"] = _scripts_option_view.is_enabled()

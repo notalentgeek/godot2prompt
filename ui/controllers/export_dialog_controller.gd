@@ -102,6 +102,10 @@ func _on_export_confirmed() -> void:
 
     # Get options from the options tab
     var export_options = _options_tab_controller.get_export_options()
+
+    # Debug print
+    print("Godot2Prompt: Screenshot option: " + str(export_options.get("include_screenshot", "not found")))
+
     _model.set_export_options(export_options)
 
     # Find the highest selected node in the hierarchy

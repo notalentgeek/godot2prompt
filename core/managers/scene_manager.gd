@@ -42,8 +42,12 @@ func _init() -> void:
     """
     Initializes the SceneManager and loads required components.
     """
-    # Load the NodeData class
-    _node_data_class = preload(NODE_DATA_PATH)
+    # Load the NodeData class using load instead of preload
+    _node_data_class = load(NODE_DATA_PATH)
+    if _node_data_class:
+        print("Godot2Prompt: NodeData class loaded successfully from " + NODE_DATA_PATH)
+    else:
+        push_error("Failed to load NodeData class from: " + NODE_DATA_PATH)
 
     # Initialize extractors directly (more reliable)
     _initialize_extractors_directly()
@@ -70,21 +74,21 @@ func _initialize_extractors_directly() -> void:
     """
     # Properties extractor
     var properties_extractor = RefCounted.new()
-    var properties_script = preload(PROPERTIES_EXTRACTOR_PATH)
+    var properties_script = load(PROPERTIES_EXTRACTOR_PATH)
     if properties_script:
         properties_extractor.set_script(properties_script)
         _properties_extractor = properties_extractor
 
     # Settings extractor
     var settings_extractor = RefCounted.new()
-    var settings_script = preload(SETTINGS_EXTRACTOR_PATH)
+    var settings_script = load(SETTINGS_EXTRACTOR_PATH)
     if settings_script:
         settings_extractor.set_script(settings_script)
         _settings_extractor = settings_extractor
 
     # Signals extractor - with fallback if loading fails
     var signals_extractor = RefCounted.new()
-    var signals_script = preload(SIGNALS_EXTRACTOR_PATH)
+    var signals_script = load(SIGNALS_EXTRACTOR_PATH)
     if signals_script:
         signals_extractor.set_script(signals_script)
         _signals_extractor = signals_extractor
@@ -325,13 +329,15 @@ func _create_node_data(
     Returns:
         A new NodeData object
     """
+    # Check if we have a valid NodeData class
     if not _node_data_class:
         push_error("NodeData class is not loaded")
         return null
 
-    # Create node data with error handling
+    # Create node data object using the standard approach first
     var node_data = null
 
+    # Attempt using the standard constructor approach
     if _node_data_class.has_method("new"):
         node_data = _node_data_class.new(
             node.name,
@@ -339,13 +345,17 @@ func _create_node_data(
             depth,
             script_code,
             properties,
-            signals_data,
+            signals_data, # This maps to p_signals in NodeData._init()
             error_log,
             project_settings,
             enabled_setting_categories,
             screenshot_path
         )
-    else:
-        push_error("Failed to create NodeData for: " + node.name)
 
-    return node_data
+    # If the standard approach failed, try an alternative
+    if not node_data:
+        # Create a base object and set properties manually
+        node_data = RefCounted.new()
+        node_data.set_script(_node_data_class)
+
+        # Set all properties manually (matching NodeData property na
