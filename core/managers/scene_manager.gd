@@ -327,7 +327,7 @@ func _create_node_data(
         screenshot_path: Path to a screenshot image
 
     Returns:
-        A new NodeData object
+        A new NodeData object or null if creation fails
     """
     # Check if we have a valid NodeData class
     if not _node_data_class:
@@ -339,6 +339,7 @@ func _create_node_data(
 
     # Attempt using the standard constructor approach
     if _node_data_class.has_method("new"):
+        # GDScript doesn't have try/except blocks, so we'll use error reporting instead
         node_data = _node_data_class.new(
             node.name,
             node.get_class(),
@@ -352,10 +353,32 @@ func _create_node_data(
             screenshot_path
         )
 
+        if node_data == null:
+            push_error("Failed to create NodeData using constructor")
+
     # If the standard approach failed, try an alternative
     if not node_data:
         # Create a base object and set properties manually
         node_data = RefCounted.new()
         node_data.set_script(_node_data_class)
 
-        # Set all properties manually (matching NodeData property na
+        # Check if script was set successfully by checking if a known property exists
+        if not node_data.get("name") != null:
+            push_error("Failed to set script on NodeData instance")
+            return null
+
+        # Set all properties manually (matching NodeData property names)
+        node_data.name = node.name
+        node_data.type = node.get_class()
+        node_data.depth = depth
+        node_data.script_code = script_code
+        node_data.properties = properties
+        node_data.signals = signals_data  # Note this uses 'signals' not 'signals_data'
+        node_data.error_log = error_log
+        node_data.project_settings = project_settings
+        node_data.enabled_setting_categories = enabled_setting_categories
+        node_data.screenshot_path = screenshot_path
+        node_data.children = []
+
+    # Always return node_data, which could still be null if all approaches failed
+    return node_data

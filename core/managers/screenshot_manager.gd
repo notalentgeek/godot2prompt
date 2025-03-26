@@ -6,6 +6,10 @@ class_name ScreenshotManager
 ScreenshotManager handles capturing screenshots of the editor viewport.
 """
 
+func _init() -> void:
+	# Simple initialization to ensure the class loads correctly
+	print("Godot2Prompt: ScreenshotManager initialized")
+
 # Capture a screenshot representation for the editor viewport
 func capture_editor_screenshot(editor_interface) -> String:
 	var screenshot_path = "res://scene_screenshot.png"
@@ -75,13 +79,12 @@ func capture_editor_screenshot(editor_interface) -> String:
 		return screenshot_path
 	else:
 		print("Godot2Prompt: Failed to save enhanced placeholder screenshot, error code: " + str(err))
-
-	return ""
+		return ""
 
 # Try to get an actual screenshot if possible
 func _try_actual_screenshot(editor_interface) -> Image:
 	# Get the editor viewport
-	var editor_viewport
+	var editor_viewport = null
 
 	if editor_interface.get_editor_main_screen():
 		editor_viewport = editor_interface.get_editor_main_screen()
@@ -105,7 +108,8 @@ func _try_actual_screenshot(editor_interface) -> Image:
 			if image and not image.is_empty():
 				return image
 
-	return null
+	# Return an empty image instead of null
+	return Image.new()
 
 # Count total nodes in a scene
 func _count_nodes(node: Node) -> int:

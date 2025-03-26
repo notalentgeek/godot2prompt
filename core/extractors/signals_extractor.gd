@@ -51,7 +51,7 @@ func _get_outgoing_connections(node: Node, signals_data: Array) -> void:
 
         # Get connections list safely
         var connections = []
-        if signal_name_to_use != null:
+        if signal_name_to_use != &"": # Using empty StringName instead of null
             connections = node.get_signal_connection_list(signal_name_to_use)
 
         # Process each connection
@@ -96,7 +96,7 @@ func _find_signals_targeting_node(search_node: Node, target_node: Node, signals_
 
         # Get connections list safely
         var connections = []
-        if signal_name_to_use != null:
+        if signal_name_to_use != &"": # Using empty StringName instead of null
             connections = search_node.get_signal_connection_list(signal_name_to_use)
 
         # See if any connection points to our target node
@@ -121,7 +121,7 @@ func _get_signal_name_as_string_name(signal_name: Variant) -> StringName:
         signal_name: Signal name to convert (Dictionary, String, or StringName)
 
     Returns:
-        The signal name as StringName, or null if conversion not possible
+        The signal name as StringName, or an empty StringName if conversion not possible
     """
     if signal_name is Dictionary and "name" in signal_name:
         return StringName(signal_name.name)
@@ -130,8 +130,8 @@ func _get_signal_name_as_string_name(signal_name: Variant) -> StringName:
     elif signal_name is StringName:
         return signal_name
 
-    # Return null if we can't convert
-    return null
+    # Return empty StringName instead of null since function returns StringName
+    return &"" # Using &"" for empty StringName
 
 func _get_node_signals_list(node: Node) -> Array:
     """
