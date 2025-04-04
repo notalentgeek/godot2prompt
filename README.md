@@ -483,6 +483,46 @@ Can you help me implement the model, view, and controller scripts for this featu
 how to create the scene in the Godot editor?
 ```
 
+## Code Style Guidelines
+
+To maintain code readability and consistency across the project, we recommend following these guidelines:
+
+### Line Length
+- **Recommended**: Keep code lines to 80 characters or less when possible
+- This improves readability on split screens, code reviews, and terminal windows
+- Not strictly mandatory, but highly encouraged for better code maintainability
+
+### Code Formatting To-Do List
+- [ ] Review existing code and identify files exceeding 80 characters per line
+- [ ] Refactor long lines by:
+  - Breaking chains of method calls into multiple lines
+  - Moving long parameter lists to multiple lines
+  - Simplifying complex expressions
+  - Using appropriate variable names to reduce line length
+- [ ] Set up your code editor to display a vertical ruler at 80 characters
+- [ ] Consider using Godot's built-in code formatter with customized settings
+- [ ] Update CI workflow to include optional line length warnings (not errors)
+
+### Example of Good Formatting
+
+```gdscript
+# Instead of this:
+func some_long_function_name(param1, param2, param3, param4, param5, param6, param7, param8):
+    var result = some_object.do_something(param1, param2).then_do_something_else(param3, param4, param5)
+
+# Prefer this:
+func some_long_function_name(
+    param1, param2, param3, param4,
+    param5, param6, param7, param8
+):
+    var result = some_object.do_something(param1, param2)
+        .then_do_something_else(
+            param3, param4, param5
+        )
+```
+
+These are guidelines rather than strict rules - the primary goal is to make the code more readable and maintainable for all contributors.
+
 ## Troubleshooting
 
 If you encounter script loading issues, particularly with the `SignalsExtractor` class, refer to the embedded fallback implementation in the `SceneManager`. This issue is documented and handled automatically by the plugin.
